@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Edit classroom{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'classroom.index' %}">Classrooms</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'classroom.index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Edit Classroom
+            </span>
+            
+            <a class="btn btn-link text-decoration-none ms-auto" href="{% url 'classroom.index' %}" role="button">Cancel</a>
+
+            <button type="button" class="btn btn-primary ms-2" id="updateFormBtn" disabled>Update</button>
+
+            <div class="dropdown ms-2">
+                <button class="btn dropdown-option text-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class='bx bx-dots-vertical-rounded fs-5 py-1'></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-start">
+                    <li>
+                        <form id="delete-form" action="{% url 'classroom.delete' room_id=classroom_form.instance.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="button" class="dropdown-item delete-btn text-danger"><i class='bx bx-trash-alt me-2' ></i>Delete</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <form class="p-3" action="{% url 'classroom.edit' room_id=classroom_form.instance.id %}" method="POST" id="classEditForm" novalidate>
+        {% csrf_token %}
+        <div class="row mb-5">
+            <div class="col">
+                <label for="room" class="form-label required">Name</label>
+                <input type="text" class="form-control" id="room" name="room" value="{{ classroom_form.instance.room }}" required>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="capacity" class="form-label required">Room capacity</label>
+                <input type="number" class="form-control" oninput="setStatus()" id="capacity" value="{{ classroom_form.instance.capacity }}" name="capacity" step="1" min="0" required>
+                <div class="form-text">
+                    Blank value will be treated as 0
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mb-5">
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select" {% if classroom_form.instance.status == 0 and classroom_form.instance.capacity == 0 %}disabled{% endif %}>
+                <option value="0" {% if classroom_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                <option value="1" {% if classroom_form.instance.status == 1 %}selected{% endif %}>Active</option>
+            </select>
+            <div class="form-text">
+                Room will be set to inactive by default if no capacity
+            </div>
+        </div>
+        
+        <!-- <div class="col text-end">
+            <button type="submit" class="ms-auto btn btn-primary">Update</button>http://127.0.0.1:8000/course
+        </div> -->
+
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    function setStatus(){
+        $status = $("#classEditForm select[name='status']")
+
+        if((parseFloat($('#capacity').val())) > 0){
+            $status.val(1)
+            $status.prop('disabled', false)
+        }else{
+            $status.val(0)
+            $status.prop('disabled', true)
+        }
+    }
+
+    $(document).ready(function(){
+        // Store the original values of all inputs
+        var originalValues = {};
+        $("#classEditForm").find('input:visible, select:visible').each(function() {
+            var $field = $(this);
+            originalValues[$field.attr('name')] = $field.val();
+        });
+
+        // Function to check form state and enable/disable submit button
+        function checkFormState() {
+            var formValid = true;
+            var valueChanged = false;
+
+            // Iterate over all visible inputs and selects
+            $("#classEditForm").find('input:visible, select:visible').each(function() {
+                var $field = $(this);
+
+                // Check if the field value has changed from the original
+                if ($field.val() !== originalValues[$field.attr('name')]) {
+                    valueChanged = true;
+                }
+            });
+
+            // Check if the form is valid
+            if (!$("#classEditForm").valid()) {
+                formValid = false;
+            }
+
+            // Enable/disable the submit button based on form state
+            $('#updateFormBtn').prop('disabled', !(valueChanged && formValid));
+        }
+
+        // Attach event listeners to input and select elements
+        $("#classEditForm").find('input:visible, select:visible').each(function() {
+            $(this).on('input', function(){
+                checkFormState();
+            })
+            
+        });
+
+        var validator = $("#classEditForm").validate({
+            errorClass: 'invalid-feedback',
+            highlight: function(element) {
+                $(element).addClass('is-invalid')
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid')
+            },
+            onkeyup: function(element) {
+                $(element).valid();
+            },
+            submitHandler: function(form) {
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: $(form).serialize(),
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'classroom.index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'classroom.index' %}"
+                        });
+                        // Handle AJAX error
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+            }
+        })
+
+        $('#updateFormBtn').on('click', function(){
+            if(validator.form()){
+                $("#classEditForm").find('input:disabled, select:disabled').removeAttr('disabled');
+                $("#classEditForm").submit()
+            }
+        })
+
+        $('.delete-btn').on('click', function(){
+            // console.log(123,name, ele)
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'classroom.index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'classroom.index' %}"
+                            });
+
+                            // Handle AJAX error
+                            // console.error('AJAX Error:', status, error);
+                        }
+                    });
+                }
+            });
+        })
+
+    })
+    
+</script>
+{% endblock javascript %}

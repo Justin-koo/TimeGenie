@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Course{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'course.index' %}">Courses</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'course.index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Edit Course
+            </span>
+
+            <a class="btn btn-link text-decoration-none ms-auto" href="{% url 'course.index' %}" role="button">Cancel</a>
+
+            <button type="button" class="btn btn-primary ms-2" id="updateFormBtn" disabled>Update</button>
+
+            <div class="dropdown ms-2">
+                <button class="btn dropdown-option text-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class='bx bx-dots-vertical-rounded fs-5 py-1'></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-start">
+                    <li>
+                        <form id="delete-form" action="{% url 'course.delete' course_id=course_form.instance.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="button" class="dropdown-item delete-btn text-danger"><i class='bx bx-trash-alt me-2' ></i>Delete</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <form id="courseForm" class="p-3" method="post" action="{% url 'course.edit' course_id=course_form.instance.id %}" novalidate>
+        {% csrf_token %}
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="name" class="form-label required">Name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ course_form.instance.name }}" required>
+            </div>
+        </div>
+        
+        <div class="row mb-5">
+            <div class="col">
+                <label for="code" class="form-label required">Course code</label>
+                <input type="text" class="form-control" id="code" name="code" value="{{ course_form.instance.code }}" required>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="code" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="0" {% if course_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                    <option value="1" {% if course_form.instance.status == 1 %}selected{% endif %}>Active</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mb-5">
+            <div class="col">
+                <span class="fs-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="m18.988 2.012 3 3L19.701 7.3l-3-3zM8 16h3l7.287-7.287-3-3L8 13z"></path><path d="M19 19H8.158c-.026 0-.053.01-.079.01-.033 0-.066-.009-.1-.01H5V5h6.847l2-2H5c-1.103 0-2 .896-2 2v14c0 1.104.897 2 2 2h14a2 2 0 0 0 2-2v-8.668l-2 2V19z"></path></svg>
+                    Section
+                </span>
+            </div>
+            <div class="col text-end">
+                <button type="button" class="btn btn-secondary" id="addSectionBtn">Add Section</button>
+            </div>
+        </div>
+
+        <div id="sections">
+            {{ section_formset.management_form }}
+            {% for form in section_formset %}
+            {% for hidden in form.hidden_fields %}
+                {{ hidden }}
+            {% endfor %}
+            <!-- {{ form.DELETE }} -->
+            <input type="hidden" name="sections-{{ forloop.counter0 }}-DELETE" id="id_sections-{{ forloop.counter0 }}-DELETE" value="">
+            <div class="card shadow-sm mb-4 section-template">
+                <a class="icon-btn text-body-secondary"><i class="bi position-absolute bi-x" style="right: 1rem; top: 0.5rem;"></i></a>
+                <div class="row card-body position-relative">
+                    <div class="col-sm-4">
+                        <label for="id_sections-{{ forloop.counter0 }}-section_code" class="form-label required">Section code</label>
+                        <input type="text" id="id_sections-{{ forloop.counter0 }}-section_code" class="form-control" name="sections-{{ forloop.counter0 }}-section_code" value="{{ form.instance.section_code }}">
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="id_sections-{{ forloop.counter0 }}-section_type" class="form-label">Type</label>
+                        <select class="form-select" id="id_sections-{{ forloop.counter0 }}-section_type" name="sections-{{ forloop.counter0 }}-section_type">
+                            <option value="lecture" {% if form.instance.section_type == "lecture" %}selected{% endif %}>Lecture</option>
+                            <option value="tutorial" {% if form.instance.section_type == "tutorial" %}selected{% endif %}>Tutorial</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="id_sections-{{ forloop.counter0 }}-section_duration" class="form-label required">Duration</label>
+                        <input type="text" id="id_sections-{{ forloop.counter0 }}-section_duration" class="form-control" name="sections-{{ forloop.counter0 }}-section_duration" value="{{ form.instance.section_duration|default:'' }}" step='1' min="0">
+                        <div class="form-text">Enter the duration in minutes</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $('#sections').find('.card').eq(0).find('i').css('display', 'none');
+
+    $(document).ready(function(){
+
+        $('#addSectionBtn').on('click', function(){
+            const sectionCount = $('#sections .card').length;
+            const newSection = $('.section-template:first').clone().removeClass('section-template').hide();
+
+            newSection.find('i').show();
+
+            newSection.find('input').each(function() {
+                const name = $(this).attr('name');
+                const newName = name.replace(/-\d+-/, `-${sectionCount}-`);
+                $(this).attr('name', newName);
+                $(this).attr('id', `id_${newName}`);
+                $(this).val('');
+
+                $(this).removeClass('is-invalid')
+            });
+
+            newSection.find('select').each(function() {
+                const name = $(this).attr('name');
+                const newName = name.replace(/-\d+-/, `-${sectionCount}-`);
+                $(this).attr('name', newName);
+                $(this).attr('id', `id_${newName}`);
+                $(this).val('lecture');
+
+                $(this).removeClass('is-invalid')
+            });
+
+            newSection.find('label').each(function() {
+                const forAttr = $(this).attr('for');
+                const newFor = forAttr.replace(/-\d+-/, `-${sectionCount}-`);
+                $(this).attr('for', newFor);
+            });
+
+            $('#sections').append(newSection.fadeIn('fast'));
+
+            newSection.find('input, select').on('change input', function() {
+                checkFormState();
+            });
+
+            // Update TOTAL_FORMS value
+            const totalForms = $('#id_sections-TOTAL_FORMS');
+            totalForms.val(sectionCount + 1);
+        })
+
+        $('#sections').on('click', '.icon-btn', function() {
+            var $card = $(this).closest('.card');
+            var index = $('#sections .card').index($card);
+
+            if ($card.hasClass('section-template')) {
+                $card.hide();  // Hide the template card instead of removing
+                $('input[name="sections-' + index + '-DELETE"]').val("on");  // Mark for deletion in the formset
+            } else {
+                $card.remove();  // Remove the card entirely
+            }
+
+            // Update the TOTAL_FORMS count
+            const sectionCount = $('#sections .card').length;
+            $('#id_sections-TOTAL_FORMS').val(sectionCount);  // Update the hidden input for total forms
+
+            checkFormState()
+        });
+
+        var originalValues = {};
+        $("#courseForm").find('input, select').each(function() {
+            var $field = $(this);
+            originalValues[$field.attr('name')] = $field.val();
+        });
+
+        // Function to check form state and enable/disable submit button
+        function checkFormState() {
+            var formValid = true;
+            var valueChanged = false;
+
+            // Iterate over all visible inputs and selects
+            $("#courseForm").find('input, select').each(function() {
+                var $field = $(this);
+
+                // Check if the field value has changed from the original
+                if ($field.val() !== originalValues[$field.attr('name')]) {
+                    valueChanged = true;
+                }
+            });
+
+            // Check if the form is valid
+            if (!$("#courseForm").valid()) {
+                formValid = false;
+            }
+
+            // Enable/disable the submit button based on form state
+            $('#updateFormBtn').prop('disabled', !(valueChanged && formValid));
+        }
+
+        // Attach event listeners to input and select elements
+        $("#courseForm").find('input, select').each(function() {
+            $(this).on('input', function(){
+                checkFormState();
+            })
+            
+        });
+
+        var validator = $("#courseForm").validate({
+            errorClass: 'invalid-feedback',
+            highlight: function(element) {
+                $(element).addClass('is-invalid')
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid')
+            },
+            onkeyup: function(element) {
+                $(element).valid();
+            },
+            submitHandler: function(form) {
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: $(form).serialize(),
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'course.index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'course.index' %}"
+                        });
+                        // Handle AJAX error
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+            }
+        })
+
+        $('#updateFormBtn').on('click', function(){
+            if(validator.form()){
+                $("#courseForm").find('input:disabled, select:disabled').removeAttr('disabled');
+                $("#courseForm").submit()
+            }
+        })
+
+        $('.delete-btn').on('click', function(){
+            // console.log(123,name, ele)
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'course.index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'course.index' %}"
+                            });
+
+                            // Handle AJAX error
+                            // console.error('AJAX Error:', status, error);
+                        }
+                    });
+                }
+            });
+        })
+
+    })
+    
+</script>
+{% endblock javascript %}

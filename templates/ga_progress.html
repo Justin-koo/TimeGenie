@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule{% endblock %}
+
+{% block content %}
+<h1>Genetic Algorithm Progress</h1>
+    <div id="progress"></div>
+    <div id="result"></div>
+
+    <script>
+        const progressDiv = document.getElementById('progress');
+        const resultDiv = document.getElementById('result');
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/ga_progress/');
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const message = data['message'];
+            console.log(123,event)
+            if (data.completed) {
+                const result = data.result;
+            } else {
+                const p = document.createElement('p');
+                p.textContent = message;
+                progressDiv.appendChild(p);
+            }
+        };
+
+        socket.onclose = function(event) {
+            console.error('WebSocket closed unexpectedly');
+        };
+    </script>
+{% endblock %}

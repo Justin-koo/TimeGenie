@@ -1,0 +1,279 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}{% endblock %} | TimeGenie</title>
+
+        <script>
+
+            const setTheme = (theme) => {
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                localStorage.setItem('theme', theme);
+            };
+
+            const currentTheme = localStorage.getItem('theme');
+
+            if (currentTheme == 'auto'){
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                }
+            }
+
+            setTheme(currentTheme);
+            
+        </script>
+
+        <!-- font -->
+        <link rel="preconnect" href="https://rsms.me/">
+        <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+        <!-- tree select -->
+        <script src="https://cdn.jsdelivr.net/npm/treeselectjs@0.11.0/dist/treeselectjs.umd.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/treeselectjs@0.11.0/dist/treeselectjs.css" />
+
+        <!-- jquery -->
+        <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+        
+        <!-- custom css -->
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+        <link rel="stylesheet" href="{% static 'css/dark.css' %}">
+
+        <!-- bootstrap -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        
+        <!-- datatable css -->
+        <!-- <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}"> -->
+        <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.css" />
+
+        <!-- select2 css -->
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+        <!-- icon -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+        <!-- <script src="https://kit.fontawesome.com/9b370d88e4.js" crossorigin="anonymous"></script> -->
+        <!-- <link rel="icon" href="data:;base64,iVBORwOKGO=" /> -->
+    </head>
+    <body>
+        <header class="navbar border-bottom shadow-sm fixed-top bg-body">
+            <div class="container-fluid px-4 py-1">
+                <button class="btn btn-nav toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill: var(--bs-body-color)"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"></path></svg>
+                </button>
+                
+                <a class="navbar-brand title ms-3 d-sm-block d-none" href="">
+                    <img src="{% static 'images/logo.png' %}" alt="" width="24" height="24" class="d-inline-block align-text-top">
+                    TimeGenie
+                </a>
+
+                <div class="dropdown ms-auto">
+                    <button class="btn border-0 dropdown-toggle d-flex align-items-center" type="button" id="theme-button-text" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item d-flex align-items-center" href="#" id="theme-light"><i class='bx bx-sun me-2'></i>Light</a></li>
+                        <li><a class="dropdown-item d-flex align-items-center" href="#" id="theme-dark"><i class='bx bx-moon me-2'></i>Dark</a></li>
+                    </ul>
+                </div>
+
+                <div class="dropdown ms-2">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Create
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item" href="{% url 'course.create' %}">Add course</a></li>
+                      <li><a class="dropdown-item" href="{% url 'instructor.create' %}">Add Instructor</a></li>
+                      <li><a class="dropdown-item" href="{% url 'classroom.create' %}">Add room</a></li>
+                      <li><a class="dropdown-item" href="{% url 'intake.create' %}">Add intake</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <div>
+            <div class="d-flex" style="height: 100vh; ">
+                
+                <div class="offcanvas offcanvas-start show" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvas" aria-labelledby="offcanvasLabel" style="margin-top: 65px; width: 300px;">
+                    <!-- <div class="offcanvas-header">
+                      <h5 class="offcanvas-title" id="offcanvasLabel">Offcanvas</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    </div> -->
+                    <div class="offcanvas-body">
+                        <ul class="nav nav-pills flex-column p-3">
+                            <li class="nav-item mb-3">
+                                <a href="{% url 'index' %}" class="nav-link {% if request.path == '/' %}active{% endif %}" aria-current="page">
+                                    <i class="bx bx-home-alt fs-5"></i>
+                                    <span class="ms-4">Home</span>
+                                </a>
+                            </li>
+                            <li class="nav-item mb-3">
+                                <a href="{% url 'course.index' %}" class="nav-link {% if 'course' in request.path %}active{% endif %}" aria-current="page">
+                                    <i class='bx bx-book-open fs-5'></i>
+                                    <span class="ms-4">Courses</span>
+                                </a>
+                            </li>
+                            <li class="nav-item mb-3">
+                                <a href="{% url 'instructor.index' %}" class="nav-link {% if 'instructor' in request.path %}active{% endif %}">
+                                    <i class='bx bx-user fs-5'></i>
+                                    <span class="ms-4">Instructors</span>
+                                    
+                                </a>
+                            </li>
+                            <li class="nav-item mb-3">
+                                <a href="{% url 'classroom.index' %}" class="nav-link {% if 'classroom' in request.path %}active{% endif %}">
+                                    <i class="bx bx-chalkboard fs-5"></i>
+                                    <span class="ms-4">Classrooms</span>
+                                </a>
+                            </li>
+                            <li class="nav-item mb-3">
+                                <a href="{% url 'intake.index' %}" class="nav-link {% if 'intake' in request.path %}active{% endif %}">
+                                    <i class='bx bx-folder-open fs-5'></i>
+                                    <span class="ms-4">Intakes</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <main class="w-100 h-auto content" style="margin-top: 65px;">
+                    {% block content %}
+                    {% endblock %}
+                </main>
+            </div>
+        </div>
+
+        <div class="toast position-fixed bottom-0 end-0 m-4 align-items-center border-0" id="liveToast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+              <div class="toast-body">
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- bootstrap -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+        
+        <!-- moment.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
+
+        <!-- datatable -->
+        <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
+        <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.js"></script>
+        <script src="https://cdn.datatables.net/plug-ins/2.0.8/sorting/datetime-moment.js"></script>
+
+        <!-- sweetalert -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <!-- select2 -->
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+        <!-- jquery validate -->
+        <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.js"></script>
+
+        {% block javascript %}
+        {% endblock javascript %}
+
+        <script>
+            $('.content').fadeIn()
+
+            const themeButtonText = document.getElementById('theme-button-text');
+
+            document.getElementById('theme-light').addEventListener('click', () => {
+                setTheme('light')
+                changeThemeText('light')
+            });
+            document.getElementById('theme-dark').addEventListener('click', () => {
+                setTheme('dark')
+                changeThemeText('dark')
+            });
+
+            function changeThemeText(theme){
+                switch(theme) {
+                    case 'light':
+                        themeButtonText.innerHTML = "<i class='bx bx-sun fs-5 me-2'></i><span class='d-none d-sm-block'>Light</span>";
+                        break;
+                    case 'dark':
+                        themeButtonText.innerHTML = "<i class='bx bx-moon fs-5 me-2'></i><span class='d-none d-sm-block'>Dark</span>";
+                        break;
+                }
+            }
+
+            if (localStorage.getItem('theme') == 'dark') {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                themeButtonText.innerHTML = "<i class='bx bx-moon fs-5 me-2'></i><span class='d-none d-sm-block'>Dark</span>";
+            } else if (localStorage.getItem('theme') == 'light'){
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+                themeButtonText.innerHTML = "<i class='bx bx-sun fs-5 me-2'></i><span class='d-none d-sm-block'>Light</span>";
+            }else{
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                //     document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    themeButtonText.innerHTML = "<i class='bx bx-moon fs-5 me-2'></i><span class='d-none d-sm-block'>Dark</span>";
+                } else {
+                //     document.documentElement.setAttribute('data-bs-theme', 'light');
+                    themeButtonText.innerHTML = "<i class='bx bx-sun fs-5 me-2'></i><span class='d-none d-sm-block'>Light</span>";
+                }
+            }
+
+            $('#offcanvas').on('hide.bs.offcanvas', function (event) {
+                $("main").addClass("content-full")
+            });
+
+            $('#offcanvas').on('show.bs.offcanvas', function (event) {
+                $("main").removeClass("content-full")
+            });
+
+            function responsiveSidebar(){
+                var screenSize = $(window).width();
+                const offcanvas = bootstrap.Offcanvas.getOrCreateInstance('#offcanvas'); 
+
+                if (screenSize < 1200) {
+                    offcanvas.hide()
+                }else{
+                    offcanvas.show()
+                }
+            }
+
+            if($(window).width() < 1200){
+                $("#offcanvas").removeClass("show")
+            }
+
+            if($('.offcanvas .nav .nav-item').hasClass("active")){
+                
+            }
+
+            $(window).resize(function() {
+                responsiveSidebar()
+            }); 
+                        
+            $(document).ready(function(){
+                const liveToast = document.getElementById('liveToast')
+                const toastBootstrap = bootstrap.Toast.getOrCreateInstance(liveToast)
+                const toastData = JSON.parse(sessionStorage.getItem('toastData'));
+
+                liveToast.addEventListener('hidden.bs.toast', () => {
+                    $(liveToast).removeClass('text-bg-success text-bg-danger')
+                })
+
+                if (toastData && toastData.showToast) {
+                    // Show the toast
+                    if (toastData.type == 'success'){
+                        $(liveToast).addClass('text-bg-success')
+                    }else {
+                        $(liveToast).addClass('text-bg-danger')
+                    }
+
+                    $(liveToast).find('.toast-body').html(toastData.message);
+                    toastBootstrap.show();
+                    
+                    // Clear the flag
+                    sessionStorage.removeItem('toastData');
+                }
+
+            })
+        </script>
+    </body>
+</html>

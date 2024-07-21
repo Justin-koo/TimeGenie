@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Create Course{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'intake.index' %}">Intakes</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Edit</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'intake.index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Edit Intake
+            </span>
+
+            <a class="btn btn-link text-decoration-none ms-auto" href="{% url 'intake.index' %}" role="button">Cancel</a>
+
+            <button type="button" class="btn btn-primary ms-2" id="updateFormBtn" disabled>Update</button>
+
+            <div class="dropdown ms-2">
+                <button class="btn dropdown-option text-secondary border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class='bx bx-dots-vertical-rounded fs-5 py-1'></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-start">
+                    <li>
+                        <form id="delete-form" action="{% url 'intake.delete' intake_id=intake_form.instance.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="button" class="dropdown-item delete-btn text-danger"><i class='bx bx-trash-alt me-2' ></i>Delete</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <form action="{% url 'intake.edit' intake_id=intake_form.instance.id %}" method="POST" id="intakeForm" class="p-3">
+        {% csrf_token %}
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="intake_code" class="form-label required">Intake code</label>
+                <input type="text" class="form-control" value="{{intake_form.instance.intake_code}}" id="intake_code" name="intake_code" required>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="total_students" class="form-label required">Number of student</label>
+                <input type="number" class="form-control" id="total_students" placeholder="0" value="{{intake_form.instance.total_students}}" name="total_students" step='1' min="0" required>
+                <div class="form-text">
+                    Blank value will be treated as 0
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="treeselect-input" class="form-label">Assigned course</label>
+                <div id="treeselect-container"></div>
+                <!-- <div class="form-text"><i class="bi bi-info-circle me-1"></i>Section assigned with instructor will not displayed</div> -->
+            </div>
+        </div>
+
+        <div class="col-12">
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select" {% if intake_form.instance.status == 0 %}disabled{% endif %}>
+                <option value="0" {% if intake_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                <option value="1" {% if intake_form.instance.status == 1 %}selected{% endif %}>Active</option>
+            </select>
+            <div class="form-text">
+                Intake will be set to inactive by default if no students/courses
+            </div>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function(){
+        var $form = $('#intakeForm')
+        var $submitBtn = $("#updateFormBtn")
+
+        var originalValues = {};
+        $form.find('input:visible, select:visible').each(function() {
+            var $field = $(this);
+            originalValues[$field.attr('name')] = $field.val();
+        });
+
+        function arraysEqual(arr1, arr2) {
+            if (arr1.length !== arr2.length) {
+                return false;
+            }
+            for (let i = 0; i < arr1.length; i++) {
+                if (arr1[i] !== arr2[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function checkFormState() {
+            var formValid = true;
+            var valueChanged = false;
+
+            valueChanged = !arraysEqual(selectedSections, associatedSectionIds)
+
+            // Iterate over all visible inputs and selects
+            $('#intake_code, #total_students, #status').each(function() {
+                var $field = $(this);
+
+                // Check if the field value has changed from the original
+                if ($field.val() !== originalValues[$field.attr('name')]) {
+                    valueChanged = true;
+                }
+
+            });
+
+            // Check if the form is valid
+            if (!$form.valid()) {
+                formValid = false;
+            }
+
+            $submitBtn.prop('disabled', !(valueChanged && formValid));
+        }
+
+        $('#intake_code, #status').on('input', function() {
+            checkFormState();
+        });
+
+        var validator = $form.validate({
+            errorClass: 'invalid-feedback',
+            highlight: function(element) {
+                $(element).addClass('is-invalid')
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid')
+            },
+            onkeyup: function(element) {
+                $(element).valid();
+            },
+            submitHandler: function(form) {
+                var formData = new FormData(form);
+
+                selectedSections.forEach(sectionId => {
+                    formData.append('sections', sectionId);
+                });
+
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    // dataType: 'json',
+                    processData: false, // Prevent jQuery from processing FormData
+                    contentType: false, // Set contentType to false for FormData
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'intake.index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'intake.index' %}"
+                        });
+                        // Handle AJAX error
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                return false; // Prevent default form submission
+            }
+        });
+
+        $submitBtn.on('click', function(){
+            if (validator.form()){
+                $form.find('input:disabled, select:disabled').removeAttr('disabled');
+                // $form.find('#sections').val(selectedSections)
+                $form.submit()
+            }
+        })
+
+        const coursesData = JSON.parse('{{ courses_json|escapejs }}');
+        const associatedSections = JSON.parse('{{ associated_sections|escapejs }}');
+        const associatedSectionIds = associatedSections.map(section => section.id);
+
+        const options = coursesData
+            .filter(course => course.sections.length > 0)  // Filter out courses with no sections
+            .map(course => ({
+                name: course.name,
+                value: 'c' + course.id,
+                children: course.sections.map(section => ({
+                    name: section.section_code,
+                    value: section.id
+                }))
+            }));
+
+        const treeselect = new Treeselect({
+            parentHtmlContainer: document.querySelector('#treeselect-container'),
+            options: options,
+            value: associatedSectionIds,
+            id: 'treeselect-input',
+            expandSelected: true,
+            // alwaysOpen: true,
+            // appendToBody: true,
+            // direction: 'bottom',
+        });
+
+        var validTreeselect = associatedSectionIds.length > 0;
+        var validTotalStudent = $('#total_students').val() > 0;
+        let selectedSections = [];
+
+        if (associatedSectionIds.length > 0){
+            selectedSections = associatedSectionIds
+
+            $("#status").prop('disabled', false)
+        }
+
+        if (!validTotalStudent){
+            $("#status").prop('disabled', true)
+        }
+
+        // Event listener for treeselect input
+        treeselect.srcElement.addEventListener('input', (e) => {
+            selectedSections = e.detail
+
+            if (e.detail.length >= 1) {
+                validTreeselect = true;
+            } else {
+                validTreeselect = false;
+            }
+
+            setStatus();
+            checkFormState();
+        });
+
+        // Event listener for total_students input
+        $('#intakeForm input[name="total_students"]').on('keyup', function(){
+            if (validator.element($(this)) && parseFloat($(this).val()) !== 0 && $(this).val()) {
+                validTotalStudent = true;
+            } else {
+                validTotalStudent = false;
+            }
+            setStatus();
+            checkFormState();
+        });
+
+        function setStatus(){
+            if (validTreeselect && validTotalStudent) {
+                $('#status').val(1)
+                $('#status').prop('disabled', false)
+            } else {
+                $('#status').val(0)
+                $('#status').prop('disabled', true)
+            }
+        }
+    })
+
+    $('.delete-btn').on('click', function(){
+        Swal.fire({
+            text: "Are you sure you want to delete it?",
+            icon: "warning",
+            background: 'var(--bs-body-bg)',
+            color: 'var(--bs-body-color)',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--bs-danger)',
+            cancelButtonColor: "var(--bs-tertiary-color)",
+            confirmButtonText: "Delete",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = $(this).closest('form')
+
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: $(form).serialize(),
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'intake.index' %}"
+                            });
+                        } 
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'intake.index' %}"
+                        });
+
+                        // Handle AJAX error
+                        // console.error('AJAX Error:', status, error);
+                    }
+                });
+            }
+        });
+    })
+
+    
+</script>
+{% endblock javascript %}

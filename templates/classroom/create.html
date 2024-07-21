@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Create Course{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'classroom.index' %}">Classrooms</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'classroom.index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Create Classroom
+            </span>
+
+            <button type="button" class="btn btn-primary ms-auto" id="subtmitBtn" disabled>Create</button>
+        </div>
+    </div>
+    
+
+    <form class="p-3" action="{% url 'classroom.create' %}" method="POST" id="classForm" novalidate>
+        {% csrf_token %}
+        <div class="row mb-5">
+            <div class="col">
+                <label for="room" class="form-label required">Name</label>
+                <input type="text" class="form-control" id="room" name="room" required>
+            </div>
+            
+        </div>
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="capacity" class="form-label required">Room capacity</label>
+                <input type="number" class="form-control" id="capacity" placeholder="0" value="0" name="capacity" step='1' min="0" required>
+                <div class="form-text">
+                    Blank value will be treated as 0
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select" disabled>
+                <option value="0" selected>Inactive</option>
+                <option value="1">Active</option>
+            </select>
+            <div class="form-text">
+                Room will be set to inactive by default if no capacity
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function(){
+        var $form = $('#classForm')
+        var $submitBtn = $("#subtmitBtn")
+
+        var validator = $form.validate({
+            errorClass: 'invalid-feedback',
+            highlight: function(element) {
+                $(element).addClass('is-invalid')
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid')
+            },
+            onkeyup: function(element) {
+                $(element).valid();
+            },
+            submitHandler: function(form) {
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: $(form).serialize(),
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'classroom.index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'classroom.index' %}"
+                        });
+                        // Handle AJAX error
+                        // console.error('AJAX Error:', status, error);
+                    }
+                });
+                return false; // Prevent default form submission
+            }
+        });
+
+        var $requiredInputs = $('input[required]');
+
+        function checkInputs() {
+            var allFilled = true;
+            $requiredInputs.each(function() {
+                if ($(this).val() === '') {
+                    allFilled = false;
+                    return false; // Break the loop
+                }
+            });
+            $submitBtn.prop('disabled', !allFilled);
+        }
+
+        $requiredInputs.on('input change keyup', function() {
+            checkInputs(); // Call this function every time any required input changes
+        });
+
+        $submitBtn.on('click', function(){
+            if (validator.form()){
+                $form.find('input:disabled, select:disabled').removeAttr('disabled');
+                $form.submit()
+            }
+        })
+
+        $('#classForm input[name="capacity"]').on('keyup', function(){
+            $status = $(this).closest('form').find('#status')
+
+            if(!validator.element($(this)) || (parseFloat($(this).val())) == 0 || !$(this).val()){
+                $status.val(0)
+                $status.prop('disabled', true)
+            }else{
+                $status.val(1)
+                $status.prop('disabled', false)
+            }
+
+            // if((parseFloat($(this).val())) > 0){
+            //     $status.val(1)
+            //     $status.prop('disabled', false)
+            // }else{
+            //     $status.val(0)
+            //     $status.prop('disabled', true)
+            // }
+        })
+
+    })
+</script>
+{% endblock javascript %}

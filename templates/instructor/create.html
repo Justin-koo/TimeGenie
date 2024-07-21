@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'instructor.index' %}">Instructors</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'instructor.index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Create Instructor
+            </span>
+
+            <button type="button" class="btn btn-primary ms-auto" id="subtmitBtn" disabled>Create</button>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'instructor.create' %}" id="instructorForm" class="p-3">
+        {% csrf_token %}
+        <div class="row mb-5">
+            <div class="col">
+                <label for="instructor_name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="instructor_name" name="instructor_name" required>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col">
+                <label for="treeselect-input" class="form-label">Assigned Course</label>
+                <div id="treeselect-container"></div>
+                <div class="form-text">Section assigned with instructor will not be displayed</div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select" disabled>
+                <option value="0" selected>Inactive</option>
+                <option value="1">Active</option>
+            </select>
+            <div class="form-text">
+                Instructor will be set to inactive by default if no courses
+            </div>
+        </div>
+        
+    </form>
+
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var $form = $('#instructorForm')
+        var $submitBtn = $("#subtmitBtn")
+
+        var validator = $form.validate({
+            errorClass: 'invalid-feedback',
+            highlight: function(element) {
+                $(element).addClass('is-invalid')
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid')
+            },
+            onkeyup: function(element) {
+                $(element).valid();
+            },
+            submitHandler: function(form) {
+                var formData = new FormData(form);
+
+                selectedSections.forEach(sectionId => {
+                    formData.append('sections', sectionId);
+                });
+
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    // dataType: 'json',
+                    processData: false, // Prevent jQuery from processing FormData
+                    contentType: false, // Set contentType to false for FormData
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'instructor.index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'instructor.index' %}"
+                        });
+                        // Handle AJAX error
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                return false; // Prevent default form submission
+            }
+        });
+
+        $form.find('input[required]').each(function() {
+            $(this).on('input change keyup', function() {
+                if ($(this).val() != '') {
+                    $submitBtn.prop('disabled', false)
+                }else{
+                    $submitBtn.prop('disabled', true)
+                }
+            });
+        });
+
+        $submitBtn.on('click', function(){
+            if (validator.form()){
+                $form.find('input:disabled, select:disabled').removeAttr('disabled');
+                $form.submit()
+            }
+        })
+
+        const coursesData = JSON.parse('{{ courses_json|escapejs }}');
+
+        const options = coursesData
+            .filter(course => course.sections.length > 0)  // Filter out courses with no sections
+            .map(course => ({
+                name: course.name,
+                value: 'c' + course.id,
+                children: course.sections.map(section => ({
+                    name: section.section_code,
+                    value: section.id
+                }))
+            }));
+
+        const treeselect = new Treeselect({
+            parentHtmlContainer: document.querySelector('#treeselect-container'),
+            options: options,
+            value: [],
+            id: 'treeselect-input',
+        });
+
+        var validTreeselect = false;
+        let selectedSections = [];
+
+        // Add input event listener to track selected values
+        treeselect.srcElement.addEventListener('input', (e) => {
+            selectedSections = e.detail
+
+            if (e.detail.length >= 1) {
+                validTreeselect = true;
+            } else {
+                validTreeselect = false;
+            }
+            setStatus();
+        });
+
+        function setStatus(){
+            if (validTreeselect) {
+                $('#status').val(1)
+                $('#status').prop('disabled', false)
+            } else {
+                $('#status').val(0)
+                $('#status').prop('disabled', true)
+            }
+        }
+    });
+</script>
+{% endblock javascript %}

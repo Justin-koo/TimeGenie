@@ -1,0 +1,18 @@
+[data-bs-theme="dark"] {
+    body{
+        background-color: #1a1d21;
+    }
+
+    /* .treeselect-input{
+        border: var(--bs-border-width) solid var(--bs-border-color);
+    } */
+
+    .treeselect-input__tags-element:hover .treeselect-input__tags-cross svg {
+        stroke: #212529;
+    }
+
+    .treeselect-input__tags-cross svg{
+        filter: invert(97%) sepia(2%) saturate(440%) hue-rotate(173deg) brightness(94%) contrast(91%);
+    }
+     
+}

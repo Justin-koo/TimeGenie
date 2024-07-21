@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Instructor{% endblock %}
+
+{% block content %}
+{% load tz %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Instructors</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Instructors</span>
+
+            <a href="{% url 'instructor.create' %}" role="button" class="btn btn-primary ms-auto h-100" id="subtmitBtn">Add instructor</a>
+        </div>
+    </div>
+
+    <div class="table-responsive p-3">
+        <table id="instructorTable" class="table border text-nowrap rounded table-hover align-middle" width="100%">
+            <thead>
+                <tr>
+                    <th class="bg-body-tertiary">Name</th>
+                    <th class="bg-body-tertiary">Sections assigned</th>
+                    <th class="bg-body-tertiary">Status</th>
+                    <th class="bg-body-tertiary">Last Updated</th>
+                    <th class="bg-body-tertiary">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for instructor in instructors %}
+                <tr>
+                    <td>{{ instructor.instructor_name }}</td>
+                    <td>
+                        {% if instructor.sections.exists %}
+                            {% for course, sections in instructor.course_sections.items %}
+                            <div class="d-flex flex-column">
+                                <a href="{% url 'course.edit' course_id=course.id %}" class="mb-1 text-decoration-none">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{ sections|join:'<br>' }}">{{ course.name }}</span>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-secondary">No sections available</span>
+                            
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if instructor.status == 1%}
+                            <span class="badge p-2 bg-success">Active</span>
+                        {% else %}
+                            <span class="badge p-2 bg-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ instructor.updated_at|timezone:"Asia/Kuala_Lumpur" | date:"F j, Y, g:i a" }}</td>
+                    <td>
+                        <div class="d-flex">
+                            <a href="{% url 'instructor.edit' instructor_id=instructor.id %}" role="button" class="btn px-0 border-0"><i class='bx bx-edit fs-5'></i></a>
+                            <form id="delete-form" action="{% url 'instructor.delete' instructor_id=instructor.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="button" class="btn delete-btn border-0"><i class='bx bx-trash fs-5'></i></button>
+                            </form>
+                        </div>
+                        
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function() {
+        $('[data-bs-toggle="tooltip"]').tooltip({
+            html: true // Allow HTML content in tooltips
+        });
+
+        $('.delete-btn').on('click', function(){
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'instructor.index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'instructor.index' %}"
+                            });
+
+                            // Handle AJAX error
+                            // console.error('AJAX Error:', status, error);
+                        }
+                    });
+                }
+            });
+        })
+
+
+        $.fn.dataTable.moment('MMM D, YYYY, h:mm a');
+        $.fn.DataTable.ext.classes.search.input = "form-control"
+        $.fn.DataTable.ext.classes.length.select = "form-select ms-2";
+
+        var table = $('#instructorTable').DataTable({
+            order: [[3, 'desc']],
+            lengthMenu: [10, 30, 50],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: [0, 1, 2, 4]
+                },
+                {
+                    searchable: false,
+                    targets: -1,
+                },
+                {
+                    className: "text-start", 
+                    orderSequence: [ 'asc', 'desc'],
+                    targets: "_all"
+                },
+            ],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search",
+                lengthMenu: 'Rows per page _MENU_',
+                buttons: {
+                    colvis: 'Column',
+                }
+            },
+            initComplete: function (settings, json) {  
+                $("#instructorTable").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");            
+            },
+        });
+    })
+</script>
+{% endblock javascript %}

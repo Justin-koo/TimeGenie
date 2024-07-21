@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Course{% endblock %}
+
+{% block content %}
+{% load tz %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Courses</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex">
+            <span class="fs-3">Courses</span>
+
+            <a href="{% url 'course.create' %}" role="button" class="btn btn-primary ms-auto h-100" id="subtmitBtn">Add course</a>
+        </div>
+    </div>
+
+    <div>
+        <div class="table-responsive px-3 pb-3">
+            <table id="courseTable" class="table text-nowrap border rounded table-hover align-middle" width="100%">
+                <thead>
+                    <tr>
+                        <th class="bg-body-tertiary">Course name</th>
+                        <th class="bg-body-tertiary">Course code</th>
+                        <th class="bg-body-tertiary">Sections available</th>
+                        <th class="bg-body-tertiary">Status</th>
+                        <th class="bg-body-tertiary">Last modified</th>
+                        <th class="bg-body-tertiary">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>
+                            {{course.name}}
+                            <!-- <b>{{ course.name }}</b> -->
+                        </td>
+                        <td>{{ course.code }}</td>
+                        <td>
+                            {% if course.sections.count > 0 %}
+                            <button class="btn btn-link p-0 fw-semibold text-decoration-none" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{ course.sections.all|join:'<br>' }}">{{ course.sections.count }}</button>
+                                <!-- <span class="badge-subtle p-2" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{ course.sections.all|join:'<br>' }}">
+                                    {{ course.sections.count }} 
+                                    section{% if course.sections.count > 1 %}s{% endif %}
+                                </span> -->
+                            {% else %}
+                            
+                            <div class="text-secondary">0</div>
+                                <!-- <span class="badge p-2 bg-secondary">0</span> -->
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if course.status == 1%}
+                                <span class="badge p-2 bg-success">Active</span>
+                            {% else %}
+                                <span class="badge p-2 bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ course.updated_at|timezone:"Asia/Kuala_Lumpur" | date:"M j, Y, g:i a" }}</td>
+                        <td class="text-end">
+                            <div class="d-flex">
+                                <a href="{% url 'course.edit' course_id=course.id %}" role="button" class="btn px-0 border-0"><i class='bx bx-edit fs-5'></i></a>
+                                <form id="delete-form" action="{% url 'course.delete' course_id=course.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn delete-btn border-0"><i class='bx bx-trash fs-5'></i></button>
+                                </form>
+                            </div>
+                            <!-- <div class="dropdown">
+                                <button class="btn border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class='bx bx-dots-vertical-rounded fs-5 py-1'></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'course.edit' course_id=course.id %}"><i class='bx bx-edit-alt me-2' ></i>Edit</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form id="delete-form" action="{% url 'course.delete' course_id=course.id %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="button" onclick='triggerAlert(this)' class="dropdown-item text-danger"><i class='bx bx-trash-alt me-2' ></i>Delete</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div> -->
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function() {
+        $('[data-bs-toggle="tooltip"]').tooltip({
+            html: true // Allow HTML content in tooltips
+        });
+
+        $('.delete-btn').on('click', function(){
+            // console.log(123,name, ele)
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'course.index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'course.index' %}"
+                            });
+
+                            // Handle AJAX error
+                            // console.error('AJAX Error:', status, error);
+                        }
+                    });
+                }
+            });
+        })
+
+        $.fn.dataTable.moment('MMM D, YYYY, h:mm a');
+        $.fn.DataTable.ext.classes.search.input = "form-control"
+        $.fn.DataTable.ext.classes.length.select = "form-select ms-2";
+
+        var table = $('#courseTable').DataTable({
+            order: [[4, 'desc']],
+            lengthMenu: [10, 30, 50],
+            columnDefs: [
+                // { type: 'date', targets: 3 },
+                {
+                    orderable: false,
+                    targets: [0, 1, 2, 3, 5]
+                },
+                {
+                    searchable: false,
+                    targets: -1,
+                },
+                {
+                    className: "text-start", 
+                    orderSequence: [ 'asc', 'desc'],
+                    targets: "_all"
+                },
+            ],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search",
+                lengthMenu: 'Rows per page _MENU_',
+                buttons: {
+                    colvis: 'Column',
+                }
+            },
+            initComplete: function (settings, json) {  
+                $("#courseTable").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");            
+            },
+        });
+
+    })
+</script>
+{% endblock javascript %}

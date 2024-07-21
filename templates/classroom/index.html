@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Classroom{% endblock %}
+
+{% block content %}
+{% load tz %}
+
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Classrooms</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex">
+            <span class="fs-3">Classrooms</span>
+
+            <a href="{% url 'classroom.create' %}" role="button" class="btn btn-primary ms-auto h-100" id="subtmitBtn">Add room</a>
+        </div>
+        
+    </div>
+
+    <div class="p-3">
+        <!-- <div class="d-flex flex-wrap p-3 table-filter">
+            <div class="col-sm-5 col-12">
+                <input type="text" class="form-control" id="tableSearch" placeholder="Search">
+            </div>
+            <div class="col-sm-6 col-12 ms-auto">
+            </div>
+        </div> -->
+
+        <div class="table-responsive">
+            <table id="classTable" class="table text-nowrap border rounded table-hover align-middle" width="100%">
+                <thead>
+                    <tr>
+                        <th class="bg-body-tertiary">Room</th>
+                        <th class="bg-body-tertiary">Capacity</th>
+                        <th class="bg-body-tertiary">Status</th>
+                        <th class="bg-body-tertiary">Last modified</th>
+                        <th class="bg-body-tertiary">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for classroom in classrooms %}
+                    <tr>
+                        <td>{{ classroom.room }}</td>
+                        <td>{{ classroom.capacity }}</td>
+                        <td>
+                            {% if classroom.status == 1%}
+                                <span class="badge p-2 bg-success">Active</span>
+                            {% else %}
+                                <span class="badge p-2 bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ classroom.updated_at|timezone:"Asia/Kuala_Lumpur" | date:"M j, Y, g:i a" }}</td>
+                        <td>
+                            <div class="d-flex">
+                                <a href="{% url 'classroom.edit' room_id=classroom.id %}" role="button" class="btn px-0 border-0" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Details"><i class='bx bx-edit fs-5'></i></a>
+                                <form id="delete-form" action="{% url 'classroom.delete' room_id=classroom.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn delete-btn border-0" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Delete"><i class='bx bx-trash fs-5'></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function(){
+        $('.delete-btn').on('click', function(){
+            // console.log(123,name, ele)
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'classroom.index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'classroom.index' %}"
+                            });
+
+                            // Handle AJAX error
+                            // console.error('AJAX Error:', status, error);
+                        }
+                    });
+                }
+            });
+        })
+
+        $.fn.dataTable.moment('MMM D, YYYY, h:mm a');
+        $.fn.DataTable.ext.classes.search.input = "form-control"
+        $.fn.DataTable.ext.classes.length.select = "form-select ms-2";
+
+        var table = $('#classTable').DataTable({
+            // autoWidth: false,
+            // scrollX: true,
+            lengthMenu: [10, 30, 50],
+            responsive: true,
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: [0, 1, 2, 4]
+                },
+                {
+                    searchable: false,
+                    targets: -1
+                },
+                {
+                    className: "text-start", 
+                    orderSequence: [ 'asc', 'desc'],
+                    targets: "_all"
+                },
+            ],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search",
+                lengthMenu: 'Rows per page _MENU_',
+                buttons: {
+                    colvis: 'Column',
+                }
+            },
+            "initComplete": function (settings, json) {  
+                $("#classTable").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");            
+            },
+            "order": [[3, 'desc']]
+        });
+    })
+</script>
+{% endblock javascript %}
+
