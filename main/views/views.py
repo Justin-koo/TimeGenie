@@ -1,7 +1,7 @@
 import json
 import subprocess
 import threading
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from main.ga import GeneticAlgorithm
 from main.models import Classroom, Intake, Section
@@ -9,74 +9,12 @@ from django.contrib import messages
 from asgiref.sync import async_to_sync
 import cProfile
 import pstats
-# from channels.layers import get_channel_layer
+from channels.layers import get_channel_layer
 
 # Create your views here.
 def index(request):
     return render(request, 'index.html')
 
-def run_external_ga():
-    result = subprocess.run(['python', r'C:\Users\justi\OneDrive\Dokumen\year3\sem2\FYP2\src\algo\test.py'], capture_output=True, text=True)
-    return result.stdout
-
-def run_ga():
-    # channel_layer = get_channel_layer()
-    intakes = Intake.objects.filter(status=1)
-    sections = Section.objects.filter(
-        course__status=1,
-        intakes__in=intakes,
-        instructor__status=1,
-    ).distinct()
-    classrooms = Classroom.objects.filter(status=1)
-
-    population_size = 100
-    gene_length = len(sections)
-    mutation_rate = 0.1
-    max_generations = 100
-    generations = 0
-
-    ga = GeneticAlgorithm(population_size, gene_length, mutation_rate, sections, classrooms)
-
-    best_timetable = None
-    while True:
-        ga.evolve()
-        best_timetable = max(ga.population, key=lambda x: x.fitness)
-        ga.best_fitness_history.append(best_timetable.fitness)
-
-        # async_to_sync(channel_layer.group_send)(
-        #     "ga_progress",
-        #     {
-        #         "type": "send_progress",
-        #         "message": f"Generation {generations}: Best Fitness = {best_timetable.fitness}, Conflict: {best_timetable.conflict}"
-        #     }
-        # )
-
-        if best_timetable.fitness >= 70:
-            break
-
-        generations += 1
-
-    if best_timetable and best_timetable.fitness >= 70:
-
-        output = run_external_ga()
-        result = json.loads(output)
-        
-        result = {
-            'student_timetable': best_timetable.get_student_timetable(),
-            'instructor_schedule': best_timetable.get_instructor_schedule(),
-            'class_availability': best_timetable.get_class_availability()
-        }
-    else:
-        result = None
-
-    # async_to_sync(channel_layer.group_send)(
-    #     "ga_progress",
-    #     {
-    #         "type": "send_progress",
-    #         "message": json.dumps({"result": result, "completed": True})
-    #     }
-    # )
-    
 def ga_view(request):
     if request.method == "POST":
         error_occurred = False
@@ -138,21 +76,6 @@ def ga_view(request):
 
         if error_occurred:
             return render(request, 'index.html')
-        
-
-        # output = run_external_ga()
-        # print(output)
-        # raise
-        # result = json.loads(output)
-
-        # return render(request, 'ga_result.html', {
-        #     'student_timetable': result.get('student_timetable', []),
-        #     'instructor_schedule': result.get('instructor_schedule', []),
-        #     'class_availability': result.get('class_availability', [])
-        # })
-
-        # threading.Thread(target=run_ga).start()
-        # return render(request, 'ga_progress.html')
 
         # ga parameter
         population_size = 100
@@ -174,25 +97,80 @@ def ga_view(request):
 
         classrooms_data = [{'id': classroom.id, 'capacity': classroom.capacity} for classroom in classrooms]
 
-        ga = GeneticAlgorithm(population_size, gene_length, mutation_rate, sections_data, classrooms_data)
+        threading.Thread(target=run_ga, args=(sections_data, classrooms_data)).start()
+        return render(request, 'ga_progress.html')
 
-        while True:
-            ga.evolve()
-            best_timetable = max(ga.population, key=lambda x: x.fitness)
-            ga.best_fitness_history.append(best_timetable.fitness)
+        # ga = GeneticAlgorithm(population_size, gene_length, mutation_rate, sections_data, classrooms_data)
 
-            print(f"Generation {generations}: Best Fitness = {best_timetable.fitness}")
-            print(f'Conflict: {best_timetable.conflict}')
+        # while True:
+        #     ga.evolve()
+        #     best_timetable = max(ga.population, key=lambda x: x.fitness)
+        #     ga.best_fitness_history.append(best_timetable.fitness)
 
-            if best_timetable.fitness >= 70:
-                student_timetable = best_timetable.get_student_timetable()
-                instructor_schedule = best_timetable.get_instructor_schedule()
-                class_availability = best_timetable.get_class_availability()
-                return render(request, 'ga_result.html', {
-                    'student_timetable': student_timetable,
-                    'instructor_schedule': instructor_schedule,
-                    'class_availability': class_availability
-                })
-                break
+        #     print(f"Generation {generations}: Best Fitness = {best_timetable.fitness}")
+        #     print(f'Conflict: {best_timetable.conflict}')
 
-            generations += 1
+        #     if best_timetable.fitness >= 70:
+        #         student_timetable = best_timetable.get_student_timetable()
+        #         instructor_schedule = best_timetable.get_instructor_schedule()
+        #         class_availability = best_timetable.get_class_availability()
+        #         return render(request, 'ga_result.html', {
+        #             'student_timetable': student_timetable,
+        #             'instructor_schedule': instructor_schedule,
+        #             'class_availability': class_availability
+        #         })
+        #         break
+
+        #     generations += 1
+
+def run_ga(sections, classrooms):
+    population_size = 100
+    gene_length = len(sections)
+    mutation_rate = 0.1
+    max_generations = 1000
+    generations = 0
+
+    ga = GeneticAlgorithm(population_size, gene_length, mutation_rate, sections, classrooms)
+
+    channel_layer = get_channel_layer()
+
+    best_timetable = None
+    while generations < max_generations:
+        ga.evolve()
+        best_timetable = max(ga.population, key=lambda x: x.fitness)
+        ga.best_fitness_history.append(best_timetable.fitness)
+
+        async_to_sync(channel_layer.group_send)(
+            "ga_progress",
+            {
+                "type": "send_progress",
+                "message": {
+                    "generation": generations,
+                    "best_fitness": best_timetable.fitness,
+                    "conflict": best_timetable.conflict,
+                }
+            }
+        )
+
+        if best_timetable.fitness >= 0.7:
+            student_timetable = best_timetable.get_student_timetable()
+            instructor_schedule = best_timetable.get_instructor_schedule()
+            class_availability = best_timetable.get_class_availability()
+
+            result = {
+                'student_timetable': student_timetable,
+                'instructor_schedule': instructor_schedule,
+                'class_availability': class_availability,
+                'completed': True
+            }
+
+            async_to_sync(channel_layer.group_send)(
+                "ga_progress",
+                {
+                    "type": "send_progress",
+                    "message": result
+                }
+            )
+            break
+
+        generations += 1

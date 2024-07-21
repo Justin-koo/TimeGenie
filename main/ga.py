@@ -87,7 +87,7 @@ class Timetable:
 
         # self.fitness = 100 - penalty
         self.conflict = total_conflict
-        return 100 - total_penalty
+        return 100 / (100 + total_penalty)
     
     def check_schedule_conflicts(self, schedule, check_gaps, check_boundaries):
         penalty = 0
@@ -153,18 +153,21 @@ class Timetable:
 
             instructor_schedule[instructor_id][day].append(instructor_slot)
 
-        # Print the timetable in the desired format
+        # Collect the timetable in a structured format
         output = []
         for instructor_id, schedule in instructor_schedule.items():
-            table = []
             for day, entries in schedule.items():
                 day_name = self.get_day_name(day)
                 for entry in entries:
                     section_id = entry['section_id']
                     time_slot_str = entry['time_slot_str']
-                    table.append([instructor_id, day_name, section_id, time_slot_str])
-            output.append(tabulate(table, headers=['Instructor ID', 'Day', 'Section ID', 'Time'], tablefmt='pretty'))
-        return "\n".join(output)
+                    output.append({
+                        'instructor_id': instructor_id,
+                        'day': day_name,
+                        'section_id': section_id,
+                        'time': time_slot_str
+                    })
+        return output
 
     def get_class_availability(self):
         # Initialize a dictionary to hold the class schedule
@@ -185,18 +188,21 @@ class Timetable:
 
             class_schedule[classroom['id']][day].append(class_slot)
 
-        # Print the timetable in the desired format
+        # Collect the timetable in a structured format
         output = []
         for classroom_id, schedule in class_schedule.items():
             for day, entries in schedule.items():
-                table = []
                 day_name = self.get_day_name(day)
                 for entry in entries:
                     section_id = entry['section_id']
                     time_slot_str = entry['time_slot_str']
-                    table.append([day_name, section_id, time_slot_str])
-                output.append(tabulate(table, headers=['Day', 'Section ID', 'Time'], tablefmt='pretty'))
-        return "\n".join(output)
+                    output.append({
+                        'classroom_id': classroom_id,
+                        'day': day_name,
+                        'section_id': section_id,
+                        'time': time_slot_str
+                    })
+        return output
 
     def get_student_timetable(self):
         # Initialize a dictionary to hold the schedule
@@ -218,19 +224,23 @@ class Timetable:
                 }
                 student_schedule[intake_id][day].append(student_slot)
 
-        # Print the timetable in the desired format
+        # Collect the timetable in a structured format
         output = []
         for intake_id, schedule in student_schedule.items():
             for day, time_slots in schedule.items():
-                table = []
                 day_name = self.get_day_name(day)
                 for slot in time_slots:
                     section_id = slot['section_id']
                     classroom_id = slot['classroom_id']
                     time_slot_str = slot['time_slot_str']
-                    table.append([day_name, section_id, classroom_id, time_slot_str])
-                output.append(tabulate(table, headers=['Day', 'Section ID', 'Classroom ID', 'Time'], tablefmt='pretty'))
-        return "\n".join(output)
+                    output.append({
+                        'intake_id': intake_id,
+                        'day': day_name,
+                        'section_id': section_id,
+                        'classroom_id': classroom_id,
+                        'time': time_slot_str
+                    })
+        return output
 
     def get_day_name(self, day):
         if day == 1:

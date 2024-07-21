@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'main',
+    'channels',
 ]
 
 ASGI_APPLICATION = 'timetable.asgi.application'

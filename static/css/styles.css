@@ -199,3 +199,7 @@ table tr{
 .treeselect-input__tags-element:hover .treeselect-input__tags-cross svg {
     stroke: var(--bs-body-color);
 }
+
+.fc .fc-timegrid-col.fc-day-today {
+    background-color: inherit !important;
+}
