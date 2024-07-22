@@ -29,3 +29,8 @@ class IntakeForm(forms.ModelForm):
     class Meta:
         model = Intake
         fields = ['intake_code', 'total_students', 'sections', 'status']
+
+class TimetableForm(forms.ModelForm):
+    class Meta:
+        model = Timetable
+        fields = ['timetable_profile']

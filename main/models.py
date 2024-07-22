@@ -86,3 +86,35 @@ class Intake(models.Model):
 
     def __str__(self):
         return self.intake_code
+    
+class Timetable(models.Model):
+    timetable_profile = models.CharField(max_length=20, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'timetable'
+        constraints = [
+            models.UniqueConstraint(fields=['timetable_profile'], name='unique_timetable_profile')
+        ]
+
+    def clean(self):
+        if Timetable.objects.filter(timetable_profile__iexact=self.timetable_profile).exclude(pk=self.pk).exists():
+            raise ValidationError({'timetable_profile': "A profile with this name already exists."})
+        super().clean()
+
+class TimetableEntry(models.Model):
+    timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE)
+    intake_id = models.IntegerField()
+    section_id = models.IntegerField()
+    instructor_id = models.IntegerField()
+    classroom_id = models.IntegerField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    day = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'timetable_entry'
+        

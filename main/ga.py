@@ -242,6 +242,24 @@ class Timetable:
                     })
         return output
 
+    def get_all_slots(self):
+        slots = []
+        for gene in self.genes:
+            section, day, timeslot_idx, classroom = gene
+
+            for intake_id in section['intake_ids']:
+                slot = {
+                    'intake_id': intake_id,
+                    'section_id': section['id'],
+                    'instructor_id': section['instructor_id'],
+                    'classroom_id': classroom['id'],
+                    'start_time': self.convert_minutes_to_time(timeslots[timeslot_idx]),
+                    'end_time': self.convert_minutes_to_time(timeslots[timeslot_idx] + section['duration']),
+                    'day': self.get_day_name(day)
+                }
+                slots.append(slot)
+        return slots
+
     def get_day_name(self, day):
         if day == 1:
             return "Monday"

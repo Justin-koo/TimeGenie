@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}GA Results{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Results</span>
+
+            <button type="button" class="btn btn-primary ms-auto" id="subtmitBtn">Save</button>
+        </div>
+    </div>
+
+    <form action="{% url 'ga_result' %}" method="POST" class="p-3" id="timetableForm">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <label for="timetable_id" class="form-label required">Select a timetable profile</label>
+                <select name="timetable_id" id="timetable_id" class="form-select">
+                    <option value="" selected disabled>Select or create a profile</option>
+                    {% for timetable in timetable_profiles %}
+                        <option value="{{ timetable.id }}">{{ timetable.timetable_profile }}</option>
+                    {% endfor %}
+                    <option value="new">Create New Profile</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-5" id="newProfileNameDiv" style="display: none;">
+            <div class="col">
+                <label for="timetable_profile" class="form-label required">Profile Name</label>
+                <input type="text" class="form-control" name="timetable_profile" id="timetable_profile" required>
+            </div>
+        </div>
+    </form>
+
+    <div class="p-3">
+        <ul class="nav nav-tabs" id="resultTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="student-timetable-tab" data-bs-toggle="tab" href="#student-timetable" role="tab" aria-controls="student-timetable" aria-selected="true">Student Timetable</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="instructor-schedule-tab" data-bs-toggle="tab" href="#instructor-schedule" role="tab" aria-controls="instructor-schedule" aria-selected="false">Instructor Schedule</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="class-availability-tab" data-bs-toggle="tab" href="#class-availability" role="tab" aria-controls="class-availability" aria-selected="false">Class Availability</a>
+            </li>
+        </ul>
+    </div>
+    
+
+    <div class="tab-content" id="resultTabContent">
+        <div class="tab-pane fade show active" id="student-timetable" role="tabpanel" aria-labelledby="student-timetable-tab">
+            <div class="row p-3">
+                <div class="col-12">
+                    <div class="mb-3">
+                        <label for="studentTimetableSelect" class="form-label">Select Intake Code:</label>
+                        <select class="form-select" id="studentTimetableSelect">
+                            <option value="" selected disabled>Select an intake</option>
+                            {% if grouped_student_timetable %}
+                                {% for intake_code in grouped_student_timetable.keys %}
+                                    <option value="collapseIntake{{ intake_code }}">{{ intake_code }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No student timetable available.</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    {% if grouped_student_timetable %}
+                        {% for intake_code, entries in grouped_student_timetable.items %}
+                            <div class="collapse" id="collapseIntake{{ intake_code }}">
+                                <table class="table border text-nowrap rounded table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th class="bg-body-tertiary">Day</th>
+                                            <th class="bg-body-tertiary">Section Code</th>
+                                            <th class="bg-body-tertiary">Classroom</th>
+                                            <th class="bg-body-tertiary">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in entries %}
+                                            <tr>
+                                                <td>{{ entry.day }}</td>
+                                                <td>{{ entry.section_code }}</td>
+                                                <td>{{ entry.classroom_name }}</td>
+                                                <td>{{ entry.time }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="instructor-schedule" role="tabpanel" aria-labelledby="instructor-schedule-tab">
+            <div class="row p-3">
+                <div class="col-12">
+                    <div class="mb-3">
+                        <label for="instructorScheduleSelect" class="form-label">Select Instructor Name:</label>
+                        <select class="form-select" id="instructorScheduleSelect">
+                            <option value="" selected disabled>Select an instructor</option>
+                            {% if grouped_instructor_schedule %}
+                                {% for instructor_name in grouped_instructor_schedule.keys %}
+                                    <option value="collapseInstructor{{ instructor_name }}">{{ instructor_name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No instructor schedule available.</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    {% if grouped_instructor_schedule %}
+                        {% for instructor_name, entries in grouped_instructor_schedule.items %}
+                            <div class="collapse" id="collapseInstructor{{ instructor_name }}">
+                                <table class="table border text-nowrap rounded table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th class="bg-body-tertiary">Day</th>
+                                            <th class="bg-body-tertiary">Section Code</th>
+                                            <th class="bg-body-tertiary">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in entries %}
+                                            <tr>
+                                                <td>{{ entry.day }}</td>
+                                                <td>{{ entry.section_code }}</td>
+                                                <td>{{ entry.time }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="class-availability" role="tabpanel" aria-labelledby="class-availability-tab">
+            <div class="row p-3">
+                <div class="col-12">
+                    <div class="mb-3">
+                        <label for="classAvailabilitySelect" class="form-label">Select Classroom:</label>
+                        <select class="form-select" id="classAvailabilitySelect">
+                            <option value="" selected disabled>Select a classroom</option>
+                            {% if grouped_class_availability %}
+                                {% for classroom_name in grouped_class_availability.keys %}
+                                    <option value="collapseClass{{ classroom_name }}">{{ classroom_name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No class availability available.</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    {% if grouped_class_availability %}
+                        {% for classroom_name, entries in grouped_class_availability.items %}
+                            <div class="collapse" id="collapseClass{{ classroom_name }}">
+                                <table class="table border text-nowrap rounded table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th class="bg-body-tertiary">Day</th>
+                                            <th class="bg-body-tertiary">Section Code</th>
+                                            <th class="bg-body-tertiary">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in entries %}
+                                            <tr>
+                                                <td>{{ entry.day }}</td>
+                                                <td>{{ entry.section_code }}</td>
+                                                <td>{{ entry.time }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Function to toggle collapse based on select change
+        function toggleCollapse(selectId, collapsePrefix) {
+            document.getElementById(selectId).addEventListener('change', function() {
+                let selectedValue = this.value;
+                document.querySelectorAll('[id^=' + collapsePrefix + ']').forEach(function(collapse) {
+                    collapse.classList.remove('show');
+                });
+                if (selectedValue) {
+                    document.getElementById(selectedValue).classList.add('show');
+                }
+            });
+        }
+
+        // Initialize toggle functions for each select
+        toggleCollapse('studentTimetableSelect', 'collapseIntake');
+        toggleCollapse('instructorScheduleSelect', 'collapseInstructor');
+        toggleCollapse('classAvailabilitySelect', 'collapseClass');
+
+        document.getElementById('timetable_id').addEventListener('change', function() {
+            var newProfileNameDiv = document.getElementById('newProfileNameDiv');
+            if (this.value === 'new') {
+                newProfileNameDiv.style.display = 'block';
+            } else {
+                newProfileNameDiv.style.display = 'none';
+            }
+        });
+
+        var $form = $('#timetableForm')
+        var $submitBtn = $("#subtmitBtn")
+
+        var validator = $form.validate({
+            errorClass: 'invalid-feedback',
+            highlight: function(element) {
+                $(element).addClass('is-invalid')
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid')
+            },
+            onkeyup: function(element) {
+                $(element).valid();
+            },
+            submitHandler: function(form) {
+                var formData = new FormData(form);
+
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    // dataType: 'json',
+                    processData: false, // Prevent jQuery from processing FormData
+                    contentType: false, // Set contentType to false for FormData
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'index' %}"
+                        });
+                        // Handle AJAX error
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                return false; // Prevent default form submission
+            }
+        });
+
+        $submitBtn.on('click', function(){
+            if (validator.form()){
+                $form.find('input:disabled, select:disabled').removeAttr('disabled');
+                // $form.find('#sections').val(selectedSections)
+                $form.submit()
+            }
+        })
+    });
+</script>
+{% endblock %}

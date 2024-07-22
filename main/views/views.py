@@ -1,32 +1,189 @@
+from collections import defaultdict
 import json
 import subprocess
 import threading
-from django.shortcuts import redirect, render
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from main.forms import TimetableForm
 from main.ga import GeneticAlgorithm
-from main.models import Classroom, Intake, Section
+from main.models import Classroom, Instructor, Intake, Section, Timetable, TimetableEntry
 from django.contrib import messages
 from asgiref.sync import async_to_sync
-import cProfile
-import pstats
 from channels.layers import get_channel_layer
+from django.core.serializers.json import DjangoJSONEncoder
 
 # Create your views here.
 def index(request):
-    return render(request, 'index.html')
+    intakes, sections, classrooms = [], [], []
+
+    intakes = Intake.objects.filter(status=1)
+
+    sections = Section.objects.filter(
+        course__status=1,
+        intakes__in=intakes,
+        instructor__status=1
+    ).select_related('course', 'instructor').prefetch_related('intakes').distinct()
+
+    classrooms = Classroom.objects.filter(status=1)
+
+    timetable_profiles = Timetable.objects.all()
+
+    context = {
+        'intakes': intakes,
+        'sections': sections,
+        'classrooms': classrooms,
+        'timetable_profiles': timetable_profiles,
+    }
+
+    return render(request, 'index.html', context)
+
+def save_timetable_to_session(session, student_timetable=None, instructor_schedule=None, class_availability=None, slots=None, status='running'):
+    session['ga_status'] = status
+    if student_timetable is not None:
+        session['student_timetable'] = student_timetable
+    if instructor_schedule is not None:
+        session['instructor_schedule'] = instructor_schedule
+    if class_availability is not None:
+        session['class_availability'] = class_availability
+    if slots is not None:
+        session['slots'] = slots
+    session.save()
+
+def check_ga_status(request):
+    ga_status = request.session.get('ga_status', 'not_started')
+    return JsonResponse({'status': ga_status})
+
+def ga_result(request):
+    if not request.session.get('ga_status') == 'completed':
+        return redirect('index')
+
+    student_timetable = request.session.get('student_timetable', [])
+    instructor_schedule = request.session.get('instructor_schedule', [])
+    class_availability = request.session.get('class_availability', [])
+
+    if request.method == 'POST':
+        timetable_id = request.POST.get('timetable_id')
+
+        if timetable_id == 'new':
+            timetable_form = TimetableForm(request.POST)
+            if timetable_form.is_valid():
+                timetable = timetable_form.save()
+            else:
+                errors = timetable_form.errors
+                return JsonResponse({'success': False, 'errors': errors})
+        else:
+            timetable = Timetable.objects.get(id=timetable_id)
+            # Clear existing entries for this timetable profile
+            TimetableEntry.objects.filter(timetable=timetable).delete()
+
+        slots = request.session.get('slots', [])
+
+        entries = [
+            TimetableEntry(
+                timetable=timetable,
+                intake_id=slot['intake_id'],
+                section_id=slot['section_id'],
+                instructor_id=slot['instructor_id'],
+                classroom_id=slot['classroom_id'],
+                start_time=slot['start_time'],
+                end_time=slot['end_time'],
+                day=slot['day']
+            )
+            for slot in slots
+        ]
+        TimetableEntry.objects.bulk_create(entries)
+
+        del request.session['slots']
+        del request.session['student_timetable']
+        del request.session['instructor_schedule']
+        del request.session['class_availability']
+        del request.session['ga_status']
+
+        return JsonResponse({'success': True, 'message': 'Profile has been successfully saved!'})
+
+    def sort_entries(entries):
+        day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        entries.sort(key=lambda x: (day_order.index(x['day']), x['time']))
+        return entries
+
+    # Fetch related data for student timetable
+    for entry in student_timetable:
+        intake = Intake.objects.get(id=entry['intake_id'])
+        section = Section.objects.get(id=entry['section_id'])
+        instructor = Instructor.objects.get(id=section.instructor_id)
+        classroom = Classroom.objects.get(id=entry['classroom_id'])
+        entry['intake_code'] = intake.intake_code
+        entry['section_code'] = section.section_code
+        entry['instructor_name'] = instructor.instructor_name
+        entry['classroom_name'] = classroom.room
+
+    # Fetch related data for instructor schedule
+    for entry in instructor_schedule:
+        section = Section.objects.get(id=entry['section_id'])
+        instructor = Instructor.objects.get(id=entry['instructor_id'])
+        entry['section_code'] = section.section_code
+        entry['instructor_name'] = instructor.instructor_name
+
+    # Fetch related data for class availability
+    for entry in class_availability:
+        section = Section.objects.get(id=entry['section_id'])
+        classroom = Classroom.objects.get(id=entry['classroom_id'])
+        entry['section_code'] = section.section_code
+        entry['classroom_name'] = classroom.room
+
+        student_timetable = sort_entries(student_timetable)
+    instructor_schedule = sort_entries(instructor_schedule)
+    class_availability = sort_entries(class_availability)
+
+    # Group data
+    grouped_student_timetable = {}
+    grouped_instructor_schedule = {}
+    grouped_class_availability = {}
+
+    for entry in student_timetable:
+        intake_code = entry['intake_code']
+        if intake_code not in grouped_student_timetable:
+            grouped_student_timetable[intake_code] = []
+        grouped_student_timetable[intake_code].append(entry)
+
+    for entry in instructor_schedule:
+        instructor_name = entry['instructor_name']
+        if instructor_name not in grouped_instructor_schedule:
+            grouped_instructor_schedule[instructor_name] = []
+        grouped_instructor_schedule[instructor_name].append(entry)
+
+    for entry in class_availability:
+        classroom_name = entry['classroom_name']
+        if classroom_name not in grouped_class_availability:
+            grouped_class_availability[classroom_name] = []
+        grouped_class_availability[classroom_name].append(entry)
+
+    timetable_profiles = Timetable.objects.all()
+
+    context = {
+        'grouped_student_timetable': grouped_student_timetable,
+        'grouped_instructor_schedule': grouped_instructor_schedule,
+        'grouped_class_availability': grouped_class_availability,
+        'timetable_profiles': timetable_profiles
+    }
+
+    return render(request, 'timetable/ga_result.html', context)
 
 def ga_view(request):
+    intakes, sections, classrooms = [], [], []
+
     if request.method == "POST":
         error_occurred = False
+        error_messages = []
 
-        # pass data
         try:
             intakes = Intake.objects.filter(status=1)
             if not intakes.exists():
-                messages.error(request, "No active intakes found.")
+                error_messages.append("No active intakes found.")
                 error_occurred = True
         except Exception as e:
-            messages.error(request, f"Error fetching intakes: {e}")
+            error_messages.append(f"Error fetching intakes: {e}")
             error_occurred = True
 
         try:
@@ -37,19 +194,19 @@ def ga_view(request):
             ).select_related('course', 'instructor').prefetch_related('intakes').distinct()
 
             if not sections.exists():
-                messages.error(request, "No active sections found with active instructors.")
+                error_messages.append("No active sections found with active instructors.")
                 error_occurred = True
         except Exception as e:
-            messages.error(request, f"Error fetching sections: {e}")
+            error_messages.append(f"Error fetching sections: {e}")
             error_occurred = True
 
         try:
             classrooms = Classroom.objects.filter(status=1)
             if not classrooms.exists():
-                messages.error(request, "No active classrooms found.")
+                error_messages.append("No active classrooms found.")
                 error_occurred = True
         except Exception as e:
-            messages.error(request, f"Error fetching classrooms: {e}")
+            error_messages.append(f"Error fetching classrooms: {e}")
             error_occurred = True
 
         if not error_occurred:
@@ -63,25 +220,25 @@ def ga_view(request):
 
             # Check if total available slots are sufficient
             if total_classroom_slots < total_section_duration:
-                messages.error(request, f"Not enough total classroom time available to accommodate all sections. Available time: {total_classroom_slots} minutes, Required time: {total_section_duration} minutes.")
+                error_messages.append(f"Not enough total classroom time available to accommodate all sections. Available time: {total_classroom_slots} minutes, Required time: {total_section_duration} minutes.")
                 error_occurred = True
 
             # Check if there is at least one classroom with enough capacity for each section
             for section in sections:
                 total_students = sum(intake.total_students for intake in section.intakes.filter(status=1))
                 if not any(classroom.capacity >= total_students for classroom in classrooms):
-                    messages.error(request, f"No classrooms have enough capacity to accommodate section {section.section_code} with {total_students} students.")
+                    error_messages.append(f"No classrooms have enough capacity to accommodate section {section.section_code} with {total_students} students.")
                     error_occurred = True
                     break
 
         if error_occurred:
-            return render(request, 'index.html')
+            return JsonResponse({'status': 'error', 'messages': error_messages})
 
         # ga parameter
-        population_size = 100
-        gene_length = len(sections)
-        mutation_rate = 0.1
-        generations = 1
+        # population_size = 100
+        # gene_length = len(sections)
+        # mutation_rate = 0.1
+        # generations = 1
 
         sections_data = [
             {
@@ -97,8 +254,9 @@ def ga_view(request):
 
         classrooms_data = [{'id': classroom.id, 'capacity': classroom.capacity} for classroom in classrooms]
 
-        threading.Thread(target=run_ga, args=(sections_data, classrooms_data)).start()
-        return render(request, 'ga_progress.html')
+        save_timetable_to_session(request.session, status='running')
+        threading.Thread(target=run_ga, args=(sections_data, classrooms_data, request.session)).start()
+        return JsonResponse({'status': 'GA started'})
 
         # ga = GeneticAlgorithm(population_size, gene_length, mutation_rate, sections_data, classrooms_data)
 
@@ -123,7 +281,7 @@ def ga_view(request):
 
         #     generations += 1
 
-def run_ga(sections, classrooms):
+def run_ga(sections, classrooms, session):
     population_size = 100
     gene_length = len(sections)
     mutation_rate = 0.1
@@ -153,9 +311,14 @@ def run_ga(sections, classrooms):
         )
 
         if best_timetable.fitness >= 0.7:
+
+            slots = best_timetable.get_all_slots()
+
             student_timetable = best_timetable.get_student_timetable()
             instructor_schedule = best_timetable.get_instructor_schedule()
             class_availability = best_timetable.get_class_availability()
+
+            save_timetable_to_session(session, student_timetable, instructor_schedule, class_availability, slots, status='completed')
 
             result = {
                 'student_timetable': student_timetable,

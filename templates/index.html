@@ -3,32 +3,386 @@
 
 {% block title %}Home{% endblock %}
 
+{% load tz %}
 {% block content %}
-<div class="d-flex h-100 flex-column justify-content-center align-items-center">
-    {% if messages %}
-        <ul>
-        {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    <i class="bi bi-table" style="font-size: 3.5rem;"></i>
-    <div class="mx-auto">
-        You don't have any schedules yet.
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item active">Home</li>
+                <li class="breadcrumb-item" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Dashboard</span>
+
+            <!-- <form action="{% url 'ga_view' %}" class="ms-auto" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary h-100">Generate</button>
+            </form>  -->
+
+            <button id="generate-btn" class="btn btn-primary h-100 ms-auto">Generate schedule</button>
+        </div>
     </div>
 
-    <form action="{% url 'ga_view' %}" method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-primary">Test</button>
-    </form>
-    
-    <!-- <div class="jumbotron">
-        <h1 class="display-4">Hello, world!</h1>
-        <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
-        <hr class="my-4">
-        <p>It uses utility classes for typography and spacing to space content out within the larger container.</p>
-        <a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a>
-    </div> -->
-</div>
+    <div class="row p-3 row-cols-md-3 row-cols-1 g-4">
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            {% if intakes %}
+                                <i class='bx bx-check-circle text-success fs-1'></i>
+                            {% else %}
+                                <i class='bx bx-x-circle text-danger fs-1'></i>
+                            {% endif %}
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title mb-0 fw-bold">{{ intakes|length }}</h5>
+                            <small class="card-subtitle mb-2 text-body-secondary text-uppercase">Total Active Intakes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            {% if sections %}
+                                <i class='bx bx-check-circle text-success fs-1'></i>
+                            {% else %}
+                                <i class='bx bx-x-circle text-danger fs-1'></i>
+                            {% endif %}
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title mb-0 fw-bold">{{ sections|length }}</h5>
+                            <small class="card-subtitle mb-2 text-body-secondary text-uppercase">Total Active Sections</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            {% if classrooms %}
+                                <i class='bx bx-check-circle text-success fs-1'></i>
+                            {% else %}
+                                <i class='bx bx-x-circle text-danger fs-1'></i>
+                            {% endif %}
+                        </div>
+                        <div class="col">
+                            <h5 class="card-title mb-0 fw-bold">{{ classrooms|length }}</h5>
+                            <small class="card-subtitle mb-2 text-body-secondary text-uppercase">Total Active Classrooms</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- {% if messages %}
+            <ul>
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        <i class="bi bi-table" style="font-size: 3.5rem;"></i>
+        <div class="mx-auto">
+            You don't have any schedules yet.
+        </div>
+
+        <form action="{% url 'ga_view' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Test</button>
+        </form> -->
+    </div>
+
+    <div class="p-3">
+        <div id="error-container">
+            <div id="error-messages-template" style="display: none;">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <ul class="mb-0"></ul>
+                    <button type="button" class="btn btn-sm btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="progress" style="display: none;">
+            <div class="d-flex">
+                <span id="progress-status">Generating</span>
+                <span class="ms-auto" id="progress-percentage">0%</span>
+            </div>
+            <div class="progress mt-1">
+                <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+
+            <div class="d-flex mt-2">
+                <button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProgress" aria-expanded="false" aria-controls="collapseWidthExample">
+                    View details
+                </button>
+                <a role="button" href="{% url 'ga_result' %}" class="ms-auto" id="btn-view" type="button" style="display: none;">
+                    Click here to view it
+                </a>
+            </div>
+
+            <div class="collapse mt-2" id="collapseProgress">
+                <div class="card card-body" id="progress-messages" style="max-height: 200px;overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+
+        <div id="completedProgress" style="display: none;">
+            Timetable finished generating. <a href="{% url 'ga_result' %}">Click here to view it</a>
+        </div>
+    </div>
+
+    <div class="table-responsive p-3">
+        <span class="fs-3">Saved Timetable</span>
+        <table id="timeTable" class="table border text-nowrap rounded table-hover align-middle" width="100%">
+            <thead>
+                <tr>
+                    <th class="bg-body-tertiary">Saved profile</th>
+                    <th class="bg-body-tertiary">Last modified</th>
+                    <th class="bg-body-tertiary">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in timetable_profiles %}
+                    <tr>
+                        <td>
+                            {{ profile.timetable_profile }}
+                        </td>
+                        <td>
+                            {{ profile.updated_at|timezone:"Asia/Kuala_Lumpur" | date:"M j, Y, g:i a" }}
+                        </td>
+                        <td>
+                            <div class="d-flex">
+                                <a href="{% url 'timetable.edit' timetable_id=profile.id %}" role="button" class="btn px-0 border-0"><i class='bx bx-edit fs-5'></i></a>
+                                <form id="delete-form" action="{% url 'timetable.delete' timetable_id=profile.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="button" class="btn delete-btn border-0"><i class='bx bx-trash fs-5'></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function(){
+        $('.delete-btn').on('click', function(){
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'index' %}"
+                            });
+                        }
+                    });
+                }
+            });
+        })
+
+        $.get("{% url 'check_ga_status' %}", function(data) {
+            if (data.status === 'completed') {
+                $('#completedProgress').show()
+                // window.location.href = '/results/';
+            } else if (data.status === 'running') {
+                // $('#progress').show();
+                showProgress()
+                // Continue to show the progress bar or reload the page to continue showing progress
+                // setTimeout(checkGAStatus, 5000); // Check again in 5 seconds
+            }
+        });
+
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = document.getElementById('progress-percentage');
+        const progressMessages = document.getElementById('progress-messages');
+
+        function showProgress(){
+            // $('#generate-btn').addClass('disabled')
+            console.log('GA started');
+            $('#progress').show();
+            const socket = new WebSocket('ws://' + window.location.host + '/ws/ga_progress/');
+
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                let message = data.message;
+
+                if (message.completed) {
+                    progressBar.style.width = '100%';
+                    progressBar.setAttribute('aria-valuenow', 100);
+                    progressPercentage.innerHTML = '100%';
+                    
+                    $('#progress-status').html('Finished Generating')
+                    $('#generate-btn').removeClass('disabled')
+                    $("#btn-view").fadeIn()
+                } else {
+                    const p = document.createElement('p');
+                    p.textContent = `Generation ${message.generation}: Best Fitness = ${message.best_fitness.toFixed(4)}, Conflict: ${message.conflict}`;
+                    progressMessages.appendChild(p);
+                    progressMessages.scrollTop = progressMessages.scrollHeight;
+
+                    let progressPercentageValue = Math.round((message.best_fitness / 0.7) * 100);
+                    if (progressPercentageValue > 100) {
+                        progressPercentageValue = 100;
+                    }
+                    progressBar.style.width = `${progressPercentageValue}%`;
+                    progressBar.setAttribute('aria-valuenow', progressPercentageValue);
+                    progressPercentage.innerHTML = `${progressPercentageValue}%`;
+                }
+            };
+
+            socket.onclose = function(event) {
+                console.error('WebSocket closed unexpectedly');
+            };
+        }
+
+        document.getElementById('generate-btn').addEventListener('click', function() {
+            if ($('#completedProgress').is(':visible')) {
+                Swal.fire({
+                    title: 'Regenerate schedule?',
+                    text: "Schedule exists. Generate a new one?",
+                    icon: "warning",
+                    background: 'var(--bs-body-bg)',
+                    color: 'var(--bs-body-color)',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--bs-danger)',
+                    cancelButtonColor: "var(--bs-tertiary-color)",
+                    confirmButtonText: "Generate",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#completedProgress').hide();
+                        startGeneration();
+                    }
+                });
+            } else {
+                startGeneration();
+            }
+        });
+
+        function startGeneration() {
+            $('#generate-btn').addClass('disabled');
+            $('#progress-status').html('Generating');
+
+            $.ajax({
+                url: '{% url "ga_view" %}',
+                type: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                },
+                success: function(data) {
+                    if (data.status === 'error') {
+                        let errorMessagesTemplate = document.getElementById('error-messages-template');
+                        let errorMessagesDiv = errorMessagesTemplate.cloneNode(true);
+                        errorMessagesDiv.style.display = 'block';
+
+                        let errorList = errorMessagesDiv.querySelector('ul');
+                        errorList.innerHTML = '';
+
+                        data.messages.forEach(function(message) {
+                            const li = document.createElement('li');
+                            li.textContent = message;
+                            errorList.appendChild(li);
+                        });
+
+                        document.getElementById('error-container').appendChild(errorMessagesDiv);
+                        $('#generate-btn').removeClass('disabled');
+                    } else {
+                        showProgress();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to start GA');
+                }
+            });
+        }
+
+
+        $.fn.dataTable.moment('MMM D, YYYY, h:mm a');
+        $.fn.DataTable.ext.classes.search.input = "form-control"
+        $.fn.DataTable.ext.classes.length.select = "form-select ms-2";
+
+        var table = $('#timeTable').DataTable({
+            order: [[1, 'desc']],
+            lengthMenu: [10, 30, 50],
+            // responsive: false,
+            columnDefs: [
+                {
+                    orderable: false,
+                    searchable: false,
+                    targets: -1,
+                },
+                {
+                    className: "text-start", 
+                    orderSequence: [ 'asc', 'desc'],
+                    targets: "_all"
+                },
+            ],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search",
+                lengthMenu: 'Rows per page _MENU_',
+                buttons: {
+                    colvis: 'Column',
+                }
+            },
+            initComplete: function (settings, json) {  
+                $("#timeTable").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");            
+            },
+        });
+    })
+
+</script>
 {% endblock %}
