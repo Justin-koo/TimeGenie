@@ -249,12 +249,13 @@
         const progressBar = document.getElementById('progress-bar');
         const progressPercentage = document.getElementById('progress-percentage');
         const progressMessages = document.getElementById('progress-messages');
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/ga_progress/');
+
 
         function showProgress(){
-            // $('#generate-btn').addClass('disabled')
             console.log('GA started');
+            progressMessages.innerHTML = '';
             $('#progress').show();
-            const socket = new WebSocket('ws://' + window.location.host + '/ws/ga_progress/');
 
             socket.onmessage = function(event) {
                 const data = JSON.parse(event.data);
@@ -292,7 +293,7 @@
         document.getElementById('generate-btn').addEventListener('click', function() {
             if ($('#completedProgress').is(':visible')) {
                 Swal.fire({
-                    title: 'Regenerate schedule?',
+                    title: 'Reschedule?',
                     text: "Schedule exists. Generate a new one?",
                     icon: "warning",
                     background: 'var(--bs-body-bg)',

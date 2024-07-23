@@ -3,8 +3,12 @@ from django.urls import path
 from .views import views, course_views, instructor_views, classroom_views, intake_views, timetable_views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+from django.views.decorators.http import require_POST
 
 urlpatterns = [
+    path('login/', auth_views.LoginView.as_view(), name='login'),
+    path('logout', require_POST(auth_views.LogoutView.as_view()), name='logout'),
     path('', views.index, name='index'),
     path('timetable', views.ga_view, name='ga_view'),
     path('timetable/result', views.ga_result, name='ga_result'),

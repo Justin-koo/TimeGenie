@@ -12,8 +12,9 @@ from django.contrib import messages
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.serializers.json import DjangoJSONEncoder
+from django.contrib.auth.decorators import login_required
 
-# Create your views here.
+@login_required
 def index(request):
     intakes, sections, classrooms = [], [], []
 
@@ -337,3 +338,29 @@ def run_ga(sections, classrooms, session):
             break
 
         generations += 1
+
+    if generations == max_generations and best_timetable:
+        slots = best_timetable.get_all_slots()
+
+        student_timetable = best_timetable.get_student_timetable()
+        instructor_schedule = best_timetable.get_instructor_schedule()
+        class_availability = best_timetable.get_class_availability()
+
+        save_timetable_to_session(session, student_timetable, instructor_schedule, class_availability, slots, status='completed')
+
+        result = {
+            'student_timetable': student_timetable,
+            'instructor_schedule': instructor_schedule,
+            'class_availability': class_availability,
+            'completed': False
+        }
+
+        async_to_sync(channel_layer.group_send)(
+            "ga_progress",
+            {
+                "type": "send_progress",
+                "message": result
+            }
+        )
+        
+    return best_timetable

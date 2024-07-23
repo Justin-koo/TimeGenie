@@ -4,6 +4,7 @@ from ..models import Course, Classroom
 from ..forms import ClassForm
 from django.utils import timezone
 from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
 
 def index(request):
     # courses = Course.objects.all().prefetch_related('sections')
