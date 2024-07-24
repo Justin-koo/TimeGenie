@@ -1,6 +1,8 @@
 from django.db import models
 from django.forms import ValidationError
 from django.utils import timezone
+from django.db.models.functions import Lower
+from django.db.models import UniqueConstraint
 
 class Course(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -74,7 +76,7 @@ class Classroom(models.Model):
         return self.room
     
 class Intake(models.Model):
-    intake_code = models.CharField(max_length=20)
+    intake_code = models.CharField(max_length=20, unique=True)
     total_students = models.IntegerField(default=0)
     status = models.IntegerField(default=0)
     sections = models.ManyToManyField(Section, related_name='intakes', blank=True)
@@ -83,6 +85,14 @@ class Intake(models.Model):
 
     class Meta:
         db_table = 'intakes'
+        constraints = [
+            models.UniqueConstraint(fields=['intake_code'], name='unique_intake_code')
+        ]
+
+    def clean(self):
+        if Intake.objects.filter(intake_code__iexact=self.intake_code).exclude(pk=self.pk).exists():
+            raise ValidationError({'intake_code': "A intake code with this name already exists."})
+        super().clean()
 
     def __str__(self):
         return self.intake_code

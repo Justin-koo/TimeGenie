@@ -12,6 +12,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('timetable', views.ga_view, name='ga_view'),
     path('timetable/result', views.ga_result, name='ga_result'),
+    path('timetable/preferences', views.ga_preference, name='ga_preference'),
     path('timetable/edit/<int:timetable_id>', timetable_views.edit, name='timetable.edit'),
     path('timetable/delete/<int:timetable_id>', timetable_views.delete, name='timetable.delete'),
     path('check_ga_status', views.check_ga_status, name='check_ga_status'),

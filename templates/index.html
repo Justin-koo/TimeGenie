@@ -23,6 +23,7 @@
             </form>  -->
 
             <button id="generate-btn" class="btn btn-primary h-100 ms-auto">Generate schedule</button>
+            <a role="button" href="{% url 'ga_preference' %}" class="btn border-0 text-body my-auto" data-bs-toggle="tooltip" data-bs-title="Preferences"><i class='bx bxs-cog' ></i></a>
         </div>
     </div>
 
@@ -184,6 +185,9 @@
 {% block javascript %}
 <script>
     $(document).ready(function(){
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
         $('.delete-btn').on('click', function(){
             Swal.fire({
                 text: "Are you sure you want to delete it?",
@@ -260,7 +264,7 @@
             socket.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 let message = data.message;
-
+                console.log(123,data)
                 if (message.completed) {
                     progressBar.style.width = '100%';
                     progressBar.setAttribute('aria-valuenow', 100);
@@ -271,7 +275,7 @@
                     $("#btn-view").fadeIn()
                 } else {
                     const p = document.createElement('p');
-                    p.textContent = `Generation ${message.generation}: Best Fitness = ${message.best_fitness.toFixed(4)}, Conflict: ${message.conflict}`;
+                    p.textContent = `Generation ${message.generation}: Best Fitness = ${message.best_fitness.toFixed(4)}`;
                     progressMessages.appendChild(p);
                     progressMessages.scrollTop = progressMessages.scrollHeight;
 

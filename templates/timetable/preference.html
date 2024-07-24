@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}GA Results{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Preference
+            </span>
+
+            <button type="button" class="btn btn-primary ms-auto" id="submitBtn">Save</button>
+        </div>
+    </div>
+
+    <form action="{% url 'ga_preference' %}" method="POST" id="preferenceForm" class="p-3">
+        {% csrf_token %}
+
+        <div class="row mb-5">
+            <div class="col-12 col-md-6 mb-5">
+                <label for="start_time" class="form-label">Earliest Start time</label>
+                <select name="start_time" id="start_time" class="form-select">
+                    {% for minute, time in start_times %}
+                    <option value="{{ minute }}" {% if minute == preferences.start_time %}selected{% endif %}>{{ time }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="end_time" class="form-label">Latest End Time</label>
+                <select name="end_time" id="end_time" class="form-select">
+                    {% for minute, time in end_times %}
+                    <option value="{{ minute }}" {% if minute == preferences.end_time %}selected{% endif %}>{{ time }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="max_time_gap" class="form-label">Maximum Gap Between Classes</label>
+                <select name="max_time_gap" id="max_time_gap" class="form-select">
+                    {% for gap, label in max_time_gaps %}
+                    <option value="{{ gap }}" {% if gap == preferences.max_time_gap %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="min_time_gap" class="form-label">Minimum Gap Between Classes</label>
+                <select name="min_time_gap" id="min_time_gap" class="form-select">
+                    {% for gap, label in min_time_gaps %}
+                    <option value="{{ gap }}" {% if gap == preferences.min_time_gap %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="lunch_start" class="form-label">Lunch Start Time</label>
+                <select name="lunch_start" id="lunch_start" class="form-select">
+                    {% for minute, time in lunch_times %}
+                    <option value="{{ minute }}" {% if preferences.lunch_start == minute %}selected{% endif %}>{{ time }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="lunch_duration" class="form-label">Lunch Duration</label>
+                <select name="lunch_duration" id="lunch_duration" class="form-select">
+                    {% for duration, label in lunch_duration %}
+                    <option value="{{ duration }}" {% if duration == preferences.lunch_duration %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="delayed_lunch_start" class="form-label">Max Delayed Lunch Start</label>
+                <select name="delayed_lunch_start" id="delayed_lunch_start" class="form-select">
+                    {% for duration, label in lunch_duration %}
+                    <option value="{{ duration }}" {% if duration == preferences.delayed_lunch_start %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function() {
+        $('#submitBtn').click(function(e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: 'POST',
+                url: '{% url "ga_preference" %}',
+                data: $('#preferenceForm').serialize(),
+                success: function(response) {
+                    if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                },
+                error: function(response) {
+                    Swal.fire({
+                        text: error,
+                        icon: "error",
+                        background: 'var(--bs-body-bg)',
+                        color: 'var(--bs-body-color)',
+                        confirmButtonColor: 'var(--bs-primary)',
+                        confirmButtonText: 'Close'
+                    }).then((result) => {
+                        window.location.href = "{% url 'index' %}"
+                    });
+                    // Handle AJAX error
+                    console.error('AJAX Error:', status, error);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
