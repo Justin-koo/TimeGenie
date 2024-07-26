@@ -140,12 +140,10 @@
         var selectedChart = event.target.value;
 
         // Hide all charts
-        document.querySelectorAll('canvas').forEach(function (canvas) {
-            canvas.style.display = 'none';
-        });
+        $('canvas').hide()
 
         // Show the selected chart
-        document.getElementById(selectedChart).style.display = 'block';
+        $('#' + selectedChart).fadeIn();
 
         // Initialize the chart if it hasn't been created already
         if (!chartsInitialized[selectedChart]) {
