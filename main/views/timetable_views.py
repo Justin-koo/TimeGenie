@@ -14,10 +14,15 @@ def edit(request, timetable_id):
     grouped_class_availability = {}
 
     if request.method == "POST":
+        status = int(request.POST.get('status', 0))
+        
         timetable_form = TimetableForm(request.POST, instance=timetable)
 
         if timetable_form.is_valid():
-            timetable_form.save()
+            timetable = timetable_form.save()
+
+            if status == 1:
+                Timetable.objects.exclude(id=timetable.id).update(status=0)
 
             return JsonResponse({'success': True, 'message': 'Profile has been successfully updated!'})
         else:

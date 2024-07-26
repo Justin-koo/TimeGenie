@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path
+
+from main.views import feedback_views, student_views
 from .views import views, course_views, instructor_views, classroom_views, intake_views, timetable_views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -7,7 +9,7 @@ from django.contrib.auth import views as auth_views
 from django.views.decorators.http import require_POST
 
 urlpatterns = [
-    path('login/', auth_views.LoginView.as_view(), name='login'),
+    path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout', require_POST(auth_views.LogoutView.as_view()), name='logout'),
     path('', views.index, name='index'),
     path('timetable', views.ga_view, name='ga_view'),
@@ -32,4 +34,11 @@ urlpatterns = [
     path('intake/create', intake_views.create, name='intake.create'),
     path('intake/edit/<int:intake_id>', intake_views.edit, name='intake.edit'),
     path('intake/delete/<int:intake_id>', intake_views.delete, name='intake.delete'),
-]+  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path('student', student_views.index, name='student.index'),
+    path('student/create', student_views.create, name='student.create'),
+    path('student/edit/<int:student_id>', student_views.edit, name='student.edit'),
+    path('student/delete/<int:student_id>', student_views.delete, name='student.delete'),
+    path('student/dashboard', student_views.student_dashboard, name='student_dashboard'),
+    path('student/feedback', student_views.student_feedback, name='student_feedback'),
+    path('feedback', feedback_views.index, name='feedback.index'),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

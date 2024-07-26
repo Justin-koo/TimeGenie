@@ -90,6 +90,33 @@
                     {% endfor %}
                 </select>
             </div>
+
+            <div class="col-12 col-md-6 mb-5">
+                <label for="min_classes_per_day" class="form-label">Minimum Classes Per Day</label>
+                <select name="min_classes_per_day" id="min_classes_per_day" class="form-select">
+                    {% for num in min_classes_per_day %}
+                    <option value="{{ num }}" {% if num == preferences.min_classes_per_day %}selected{% endif %}>{{ num }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-12 col-md-6 mb-5">
+                <label for="max_generations" class="form-label">Maximum Generations</label>
+                <select name="max_generations" id="max_generations" class="form-select">
+                    {% for gen in max_generations %}
+                    <option value="{{ gen }}" {% if gen == preferences.max_generations %}selected{% endif %}>{{ gen }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-12 col-md-6 mb-5">
+                <label for="population_size" class="form-label">Population Size</label>
+                <select name="population_size" id="population_size" class="form-select">
+                    {% for size in population_size %}
+                    <option value="{{ size }}" {% if size == preferences.population_size %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
 
     </form>

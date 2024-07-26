@@ -43,55 +43,31 @@
 
     <form class="p-3" action="{% url 'classroom.edit' room_id=classroom_form.instance.id %}" method="POST" id="classEditForm" novalidate>
         {% csrf_token %}
-        <div class="row mb-5">
-            <div class="col">
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="room" class="form-label required">Name</label>
                 <input type="text" class="form-control" id="room" name="room" value="{{ classroom_form.instance.room }}" required>
             </div>
-        </div>
 
-        <div class="row mb-5">
-            <div class="col">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="capacity" class="form-label required">Room capacity</label>
-                <input type="number" class="form-control" oninput="setStatus()" id="capacity" value="{{ classroom_form.instance.capacity }}" name="capacity" step="1" min="0" required>
-                <div class="form-text">
-                    Blank value will be treated as 0
-                </div>
+                <input type="number" class="form-control" id="capacity" value="{{ classroom_form.instance.capacity }}" name="capacity" step="1" min="0" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="0" {% if classroom_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                    <option value="1" {% if classroom_form.instance.status == 1 %}selected{% endif %}>Active</option>
+                </select>
             </div>
         </div>
-
-        <div class="col-12 mb-5">
-            <label for="status" class="form-label">Status</label>
-            <select id="status" name="status" class="form-select" {% if classroom_form.instance.status == 0 and classroom_form.instance.capacity == 0 %}disabled{% endif %}>
-                <option value="0" {% if classroom_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
-                <option value="1" {% if classroom_form.instance.status == 1 %}selected{% endif %}>Active</option>
-            </select>
-            <div class="form-text">
-                Room will be set to inactive by default if no capacity
-            </div>
-        </div>
-        
-        <!-- <div class="col text-end">
-            <button type="submit" class="ms-auto btn btn-primary">Update</button>http://127.0.0.1:8000/course
-        </div> -->
-
     </form>
 </div>
 {% endblock %}
 
 {% block javascript %}
 <script>
-    function setStatus(){
-        $status = $("#classEditForm select[name='status']")
-
-        if((parseFloat($('#capacity').val())) > 0){
-            $status.val(1)
-            $status.prop('disabled', false)
-        }else{
-            $status.val(0)
-            $status.prop('disabled', true)
-        }
-    }
 
     $(document).ready(function(){
         // Store the original values of all inputs
@@ -134,16 +110,6 @@
         });
 
         var validator = $("#classEditForm").validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 $.ajax({
                     url: $(form).attr('action'),

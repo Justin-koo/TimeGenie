@@ -29,34 +29,26 @@
 
     <form class="p-3" action="{% url 'classroom.create' %}" method="POST" id="classForm" novalidate>
         {% csrf_token %}
-        <div class="row mb-5">
-            <div class="col">
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="room" class="form-label required">Name</label>
                 <input type="text" class="form-control" id="room" name="room" required>
             </div>
-            
-        </div>
 
-        <div class="row mb-5">
-            <div class="col">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="capacity" class="form-label required">Room capacity</label>
-                <input type="number" class="form-control" id="capacity" placeholder="0" value="0" name="capacity" step='1' min="0" required>
-                <div class="form-text">
-                    Blank value will be treated as 0
-                </div>
+                <input type="number" class="form-control" id="capacity" value="0" name="capacity" step='1' min="0" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="0">Inactive</option>
+                    <option value="1" selected>Active</option>
+                </select>
             </div>
         </div>
 
-        <div class="col-12">
-            <label for="status" class="form-label">Status</label>
-            <select id="status" name="status" class="form-select" disabled>
-                <option value="0" selected>Inactive</option>
-                <option value="1">Active</option>
-            </select>
-            <div class="form-text">
-                Room will be set to inactive by default if no capacity
-            </div>
-        </div>
     </form>
 </div>
 {% endblock %}
@@ -68,16 +60,6 @@
         var $submitBtn = $("#submitBtn")
 
         var validator = $form.validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 $.ajax({
                     url: $(form).attr('action'),
@@ -142,26 +124,6 @@
                 $form.find('input:disabled, select:disabled').removeAttr('disabled');
                 $form.submit()
             }
-        })
-
-        $('#classForm input[name="capacity"]').on('keyup', function(){
-            $status = $(this).closest('form').find('#status')
-
-            if(!validator.element($(this)) || (parseFloat($(this).val())) == 0 || !$(this).val()){
-                $status.val(0)
-                $status.prop('disabled', true)
-            }else{
-                $status.val(1)
-                $status.prop('disabled', false)
-            }
-
-            // if((parseFloat($(this).val())) > 0){
-            //     $status.val(1)
-            //     $status.prop('disabled', false)
-            // }else{
-            //     $status.val(0)
-            //     $status.prop('disabled', true)
-            // }
         })
 
     })

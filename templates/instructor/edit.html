@@ -44,29 +44,26 @@
     <form method="post" id="instructorForm" action="{% url 'instructor.edit' instructor_id=instructor_form.instance.id %}" class="p-3">
         {% csrf_token %}
 
-        <div class="row mb-5">
-            <div class="col">
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="instructor_name" class="form-label required">Name</label>
                 <input type="text" class="form-control" id="instructor_name" name="instructor_name" value="{{ instructor_form.instance.instructor_name }}" required>
             </div>
-        </div>
         
-        <div class="row mb-5">
-            <div class="col">
-                <label for="treeselect-input" class="form-label">Assigned Course</label>
+            <div class="col-12 col-md-6 mb-4">
+                <label for="treeselect-input" class="form-label">
+                    Assigned Course
+                    <i class='bx bx-info-circle' data-bs-toggle="tooltip" data-bs-title="Assigned sections not shown"></i>
+                </label>
                 <div id="treeselect-container"></div>
-                <div class="form-text">Section assigned with instructor will not be displayed</div>
             </div>
-        </div>
 
-        <div class="col-12">
-            <label for="status" class="form-label">Status</label>
-            <select id="status" name="status" class="form-select" {% if instructor_form.instance.status == 0 %}disabled{% endif %}>
-                <option value="0" {% if instructor_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
-                <option value="1" {% if instructor_form.instance.status == 1 %}selected{% endif %}>Active</option>
-            </select>
-            <div class="form-text">
-                Instructor will be set to inactive by default if no courses
+            <div class="col-12 col-md-6 mb-4">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select" >
+                    <option value="0" {% if instructor_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                    <option value="1" {% if instructor_form.instance.status == 1 %}selected{% endif %}>Active</option>
+                </select>
             </div>
         </div>
         
@@ -77,6 +74,9 @@
 
 {% block javascript %}
 <script>
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
     document.addEventListener('DOMContentLoaded', function () {
         var $form = $('#instructorForm')
         var $submitBtn = $("#updateFormBtn")
@@ -129,16 +129,6 @@
         });
 
         var validator = $form.validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 var formData = new FormData(form);
 
@@ -221,38 +211,17 @@
             // alwaysOpen: true,
         });
 
-        var validTreeselect = associatedSectionIds.length > 0;
         let selectedSections = [];
 
         if (associatedSectionIds.length > 0){
             selectedSections = associatedSectionIds
-
-            $('#status').prop('disabled', false)
         }
 
         // Add input event listener to track selected values
         treeselect.srcElement.addEventListener('input', (e) => {
             selectedSections = e.detail
-
-            if (e.detail.length >= 1) {
-                validTreeselect = true;
-            } else {
-                validTreeselect = false;
-            }
-
-            setStatus();
             checkFormState();
         });
-
-        function setStatus(){
-            if (validTreeselect) {
-                $('#status').val(1)
-                $('#status').prop('disabled', false)
-            } else {
-                $('#status').val(0)
-                $('#status').prop('disabled', true)
-            }
-        }
 
         $('.delete-btn').on('click', function(){
             Swal.fire({

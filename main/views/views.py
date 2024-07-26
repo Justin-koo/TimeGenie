@@ -16,6 +16,8 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.serializers.json import DjangoJSONEncoder
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.views import LoginView
+from django.db.models import Count, Q
 
 timeslots = [
         510,   # 8:30 AM
@@ -54,7 +56,9 @@ timeslots = [
 def index(request):
     intakes, sections, classrooms = [], [], []
 
-    intakes = Intake.objects.filter(status=1)
+    intakes = Intake.objects.prefetch_related('sections__course').annotate(
+        active_student_count=Count('students', filter=Q(students__user__is_active=True))
+    ).filter(active_student_count__gt=0)
 
     sections = Section.objects.filter(
         course__status=1,
@@ -101,6 +105,10 @@ def ga_result(request):
 
     if request.method == 'POST':
         timetable_id = request.POST.get('timetable_id')
+        status = int(request.POST.get('status', 0))
+
+        if not timetable_id:
+            return JsonResponse({'success': False, 'errors': {'timetable_id': 'No timetable profile selected.'}})
 
         if timetable_id == 'new':
             timetable_form = TimetableForm(request.POST)
@@ -113,6 +121,9 @@ def ga_result(request):
             timetable = Timetable.objects.get(id=timetable_id)
             # Clear existing entries for this timetable profile
             TimetableEntry.objects.filter(timetable=timetable).delete()
+
+        if status == 1:
+            Timetable.objects.exclude(id=timetable.id).update(status=0)
 
         slots = request.session.get('slots', [])
 
@@ -215,9 +226,13 @@ def ga_view(request):
     error_messages = []
 
     try:
-        intakes = Intake.objects.filter(status=1)
+        # Annotate intakes with the count of active students
+        intakes = Intake.objects.prefetch_related('sections__course').annotate(
+            active_student_count=Count('students', filter=Q(students__user__is_active=True))
+        ).filter(active_student_count__gt=0)
+
         if not intakes.exists():
-            error_messages.append("No active intakes found.")
+            error_messages.append("No active intakes with students found.")
             error_occurred = True
     except Exception as e:
         error_messages.append(f"Error fetching intakes: {e}")
@@ -262,7 +277,7 @@ def ga_view(request):
 
         # Check if there is at least one classroom with enough capacity for each section
         for section in sections:
-            total_students = sum(intake.total_students for intake in section.intakes.filter(status=1))
+            total_students = sum(intake.students.filter(user__is_active=True).count() for intake in section.intakes.filter(status=1))
             if not any(classroom.capacity >= total_students for classroom in classrooms):
                 error_messages.append(f"No classrooms have enough capacity to accommodate section {section.section_code} with {total_students} students.")
                 error_occurred = True
@@ -271,20 +286,14 @@ def ga_view(request):
     if error_occurred:
         return JsonResponse({'status': 'error', 'messages': error_messages})
 
-    # ga parameter
-    # population_size = 100
-    # gene_length = len(sections)
-    # mutation_rate = 0.1
-    # generations = 1
-
     sections_data = [
         {
             'id': section.id,
             'duration': section.section_duration,
             'course_id': section.course.id,
             'instructor_id': section.instructor.id,
-            'intake_ids': [intake.id for intake in section.intakes.filter(status=1)],
-            'total_students': sum(intake.total_students for intake in section.intakes.filter(status=1))
+            'intake_ids': [intake.id for intake in section.intakes.filter(status=1).annotate(active_student_count=Count('students', filter=Q(students__user__is_active=True))).filter(active_student_count__gt=0)],
+            'total_students': sum(intake.students.filter(user__is_active=True).count() for intake in section.intakes.filter(status=1))
         }
         for section in sections
     ]
@@ -319,22 +328,21 @@ def ga_view(request):
         #     generations += 1
 
 def run_ga(sections, classrooms, session):
-    population_size = 200
-    gene_length = len(sections)
-    # mutation_rate = 0.1
-    max_generations = 1000
-    # generations = 0
 
     classroom_capacity_map = {classroom['id']: classroom['capacity'] for classroom in classrooms}
-
-    initial_population = create_initial_population(population_size, sections, classroom_capacity_map)
 
     ensure_default_preferences(session)
     preferences = session['ga_preferences']
     lunch_end = preferences['lunch_start'] + preferences['lunch_duration']
     lunch_break = (preferences['lunch_start'], lunch_end)
     lunch_duration = preferences['lunch_duration']
-    
+
+    gene_length = len(sections)
+    population_size = preferences['population_size']
+    max_generations = preferences['max_generations']
+
+    initial_population = create_initial_population(population_size, sections, classroom_capacity_map)
+
     def random_mutation(offspring, ga_instance):
         mutation_probability = 0.1
 
@@ -419,33 +427,10 @@ def run_ga(sections, classrooms, session):
                         # penalty +=1
                         penalty += (last_end_time - preferences['end_time']) / 60.0 / 5
 
-                    # lunch_break_present = False
-                    # for i in range(len(sorted_times) - 1):
-                    #     start_time = sorted_times[i][0]
-                    #     end_time = sorted_times[i][1]
-                    #     next_start_time = sorted_times[i + 1][0]
-                    #     gap = next_start_time - end_time
-
-                    #     if (start_time <= lunch_break[0] and end_time >= lunch_break[1]) or \
-                    #     (start_time >= lunch_break[0] and start_time < lunch_break[1]) or \
-                    #     (end_time >= lunch_break[0] and end_time <= lunch_break[1]):
-                    #         lunch_break_present = True
-                    #         if end_time >= lunch_break[0] + preferences['delayed_lunch_start']:
-                    #             penalty += (end_time - lunch_break[0] - preferences['delayed_lunch_start']) / 60.0 / 10
-
-                    #         if not (gap >= lunch_duration):
-                    #             penalty += 1
-                    #         elif gap > preferences['max_time_gap']:
-                    #             penalty += (gap - preferences['max_time_gap']) / 60.0 / 10
-
-                    #     else:
-                    #         if gap > preferences['max_time_gap'] or gap <= preferences['min_time_gap']:
-                    #             penalty += 1
-
-                    # if not lunch_break_present:
-                    #     penalty += 2
-
                     total_times = len(sorted_times)
+
+                    if total_times < preferences['min_classes_per_day']:
+                        penalty += 1
 
                     for i in range(total_times):
                         start_time = sorted_times[i][0]
@@ -460,8 +445,8 @@ def run_ga(sections, classrooms, session):
                                 next_start_time = sorted_times[i + 1][0]
                                 gap = next_start_time - end_time
                                 if not (gap >= lunch_duration):
-                                    penalty += 1
-                                    # penalty += (lunch_duration - gap) / 60.0 / 5
+                                    # penalty += 1
+                                    penalty += (lunch_duration - gap) / 60.0 / 5
                                 else:
                                     if (gap > preferences['max_time_gap']):
                                         # penalty += 1
@@ -496,7 +481,7 @@ def run_ga(sections, classrooms, session):
         mutation_type=random_mutation,
         # mutation_probability=0.5,
         # gene_space=gene_space,
-        # random_seed=42,
+        # random_seed=123,
         gene_type=int,
         on_generation=on_gen,
         keep_elitism=int(0.1 * population_size),
@@ -773,7 +758,6 @@ def convert_to_native(obj):
         return obj
 
 def ga_preference(request):
-    ensure_default_preferences(request.session)
 
     start_times = generate_time_options(8, 30, 10, 30, 15)  # From 8:30 AM to 5:00 PM in 15-minute intervals
     end_times = generate_time_options(16, 00, 18, 0, 15, descending=True)  # From 8:30 AM to 6:00 PM in 15-minute intervals
@@ -781,31 +765,34 @@ def ga_preference(request):
     min_time_gaps = generate_time_gap_options(15, 45, 15)
     lunch_duration = generate_time_gap_options(30, 60, 15)
     lunch_times = generate_time_options(12, 0, 13, 0, 15) 
+    min_classes_per_day = generate_option_range(1, 2, 1)  # Minimum classes per day from 1 to 6
+    
+    max_generations = generate_option_range(1000, 10000, 50)  # Maximum generations for the GA from 50 to 500
+    population_size = generate_option_range(50, 1000, 10)  # Population size for the GA from 10 to 100
 
     if request.method == 'POST':
         # Process the form data
-        start_time = int(request.POST.get('start_time', request.session['ga_preferences']['start_time']))
-        end_time = int(request.POST.get('end_time', request.session['ga_preferences']['end_time']))
-        min_time_gap = int(request.POST.get('min_time_gap', request.session['ga_preferences']['min_time_gap']))
-        max_time_gap = int(request.POST.get('max_time_gap', request.session['ga_preferences']['max_time_gap']))
-        lunch_start = int(request.POST.get('lunch_start', request.session['ga_preferences']['lunch_start']))
-        lunch_duration = int(request.POST.get('lunch_duration', request.session['ga_preferences']['lunch_duration']))
-        delayed_lunch_start = int(request.POST.get('delayed_lunch_start', request.session['ga_preferences']['delayed_lunch_start']))
-
-        # Save preferences in the session or database as needed
-        request.session['ga_preferences'] = {
-            'start_time': start_time,
-            'end_time': end_time,
-            'min_time_gap': min_time_gap,
-            'max_time_gap': max_time_gap,
-            'lunch_start': lunch_start,
-            'lunch_duration': lunch_duration,
-            'delayed_lunch_start': delayed_lunch_start,
+        preferences = {
+            'start_time': int(request.POST.get('start_time', request.session['ga_preferences'].get('start_time'))),
+            'end_time': int(request.POST.get('end_time', request.session['ga_preferences'].get('end_time'))),
+            'min_time_gap': int(request.POST.get('min_time_gap', request.session['ga_preferences'].get('min_time_gap'))),
+            'max_time_gap': int(request.POST.get('max_time_gap', request.session['ga_preferences'].get('max_time_gap'))),
+            'lunch_start': int(request.POST.get('lunch_start', request.session['ga_preferences'].get('lunch_start'))),
+            'lunch_duration': int(request.POST.get('lunch_duration', request.session['ga_preferences'].get('lunch_duration'))),
+            'delayed_lunch_start': int(request.POST.get('delayed_lunch_start', request.session['ga_preferences'].get('delayed_lunch_start'))),
+            'min_classes_per_day': int(request.POST.get('min_classes_per_day', request.session['ga_preferences'].get('min_classes_per_day'))),
+            'max_generations': int(request.POST.get('max_generations', request.session['ga_preferences'].get('max_generations'))),
+            'population_size': int(request.POST.get('population_size', request.session['ga_preferences'].get('population_size')))
         }
 
-        return JsonResponse({'success': True, 'message': 'Preference has been successfully saved!'})
+        # Save preferences in the session or database as needed
+        request.session['ga_preferences'] = preferences
+
+        return JsonResponse({'success': True, 'message': 'Preferences have been successfully saved!'})
+
+    ensure_default_preferences(request.session)
     
-    preferences = request.session['ga_preferences']
+    preferences = request.session.get('ga_preferences', {})
 
     return render(request, 'timetable/preference.html', {
         'start_times': start_times,
@@ -814,8 +801,15 @@ def ga_preference(request):
         'min_time_gaps': min_time_gaps,
         'lunch_duration': lunch_duration,
         'lunch_times': lunch_times,
+        'min_classes_per_day': min_classes_per_day,
+        'max_generations': max_generations,
+        'population_size': population_size,
         'preferences': preferences,
     })
+
+def generate_option_range(start, end, step):
+    return list(range(start, end + 1, step))
+
 
 def generate_time_options(start_hour, start_minute, end_hour, end_minute, interval, descending=False):
     times = []
@@ -845,9 +839,21 @@ def ensure_default_preferences(session):
         'max_time_gap': 60,  # 1 hour
         'lunch_start': 720,  # 12:00 PM
         'lunch_duration': 60,
-        'delayed_lunch_start': 30
-        # 'penalty_weight': 1
+        'delayed_lunch_start': 30,
+        'min_classes_per_day': 1,
+        'max_generations': 1000,
+        'population_size': 100,
     }
     if 'ga_preferences' not in session:
         session['ga_preferences'] = default_preferences
 
+
+class CustomLoginView(LoginView):
+    template_name = 'registration/login.html'
+
+    def get_success_url(self):
+        user = self.request.user
+        if user.groups.filter(name='Students').exists():
+            return reverse('student_dashboard')  # Redirect to student dashboard
+        else:
+            return reverse('index')

@@ -43,15 +43,31 @@
     <form action="{% url 'timetable.edit' timetable_id=timetable_form.instance.id %}" method="POST" class="p-3" id="timetableForm">
         {% csrf_token %}
         <div class="row">
-            <div class="col">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="timetable_profile" class="form-label required">Profile Name</label>
                 <input type="text" class="form-control" name="timetable_profile" id="timetable_profile" value="{{timetable_form.instance.timetable_profile}}" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="status" class="form-label">
+                    Status
+                    <i class='bx bx-info-circle' data-bs-toggle="tooltip" data-bs-title="Active will disable other timetables"></i>
+                </label>
+                <select name="status" id="status" class="form-select">
+                    <option value="0" {% if timetable_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                    <option value="1" {% if timetable_form.instance.status == 1 %}selected{% endif %}>Active</option>
+                </select>
             </div>
         </div>
     </form>
 
     <div class="p-3">
-        <ul class="nav nav-tabs" id="resultTab" role="tablist">
+        <span class="fs-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"></path><path d="M13 7h-2v5.414l3.293 3.293 1.414-1.414L13 11.586z"></path></svg>
+            View Schedule
+        </span>
+
+        <ul class="nav nav-tabs mt-4" id="resultTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <a class="nav-link active" id="student-timetable-tab" data-bs-toggle="tab" href="#student-timetable" role="tab" aria-controls="student-timetable" aria-selected="true">Student Timetable</a>
             </li>
@@ -204,6 +220,9 @@
 
 {% block javascript %}
 <script>
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    
     $(document).ready(function(){
         $('.delete-btn').on('click', function(){
             Swal.fire({
@@ -272,7 +291,7 @@
             var valueChanged = false;
 
             // Iterate over all visible inputs and selects
-            $('#timetable_profile').each(function() {
+            $('#timetable_profile, #status').each(function() {
                 var $field = $(this);
 
                 // Check if the field value has changed from the original
@@ -290,7 +309,7 @@
             $submitBtn.prop('disabled', !(valueChanged && formValid));
         }
 
-        $('#timetable_profile').on('input', function() {
+        $('#timetable_profile, #status').on('input', function() {
             checkFormState();
         });
 

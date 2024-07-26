@@ -44,22 +44,18 @@
     <form id="courseForm" class="p-3" method="post" action="{% url 'course.edit' course_id=course_form.instance.id %}" novalidate>
         {% csrf_token %}
 
-        <div class="row mb-5">
-            <div class="col">
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="name" class="form-label required">Name</label>
                 <input type="text" class="form-control" id="name" name="name" value="{{ course_form.instance.name }}" required>
             </div>
-        </div>
-        
-        <div class="row mb-5">
-            <div class="col">
+
+            <div class="col-12 col-md-6 mb-4">
                 <label for="code" class="form-label required">Course code</label>
                 <input type="text" class="form-control" id="code" name="code" value="{{ course_form.instance.code }}" required>
             </div>
-        </div>
 
-        <div class="row mb-5">
-            <div class="col">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="code" class="form-label">Status</label>
                 <select id="status" name="status" class="form-select">
                     <option value="0" {% if course_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
@@ -104,7 +100,7 @@
                     </div>
                     <div class="col-sm-4">
                         <label for="id_sections-{{ forloop.counter0 }}-section_duration" class="form-label required">Duration</label>
-                        <input type="text" id="id_sections-{{ forloop.counter0 }}-section_duration" class="form-control" name="sections-{{ forloop.counter0 }}-section_duration" value="{{ form.instance.section_duration|default:'' }}" step='1' min="0">
+                        <input type="text" id="id_sections-{{ forloop.counter0 }}-section_duration" class="form-control" name="sections-{{ forloop.counter0 }}-section_duration" value="{{ form.instance.section_duration|default:'' }}" step='1' min="60">
                         <div class="form-text">Enter the duration in minutes</div>
                     </div>
                 </div>
@@ -221,16 +217,6 @@
         });
 
         var validator = $("#courseForm").validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 $.ajax({
                     url: $(form).attr('action'),

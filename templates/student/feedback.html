@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Preferences Feedback</span>
+
+            <button type="button" class="btn btn-primary ms-auto" id="submitBtn">Submit</button>
+        </div>
+    </div>
+
+    <form method="post" id="feedbackForm" action="{% url 'student_feedback' %}" class="p-3">
+        {% csrf_token %}
+    
+        <div class="card">
+            <div class="card-body row">
+                <!-- Radio buttons for Earliest Start Time -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Earliest Start Time</label>
+                    {% for minute, time in start_times %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="start_time_{{ forloop.counter }}" name="start_time_rank" value="{{ minute }}" {% if minute == preferences.start_time_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="start_time_{{ forloop.counter }}">{{ time }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Latest End Time -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Latest End Time</label>
+                    {% for minute, time in end_times %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="end_time_{{ forloop.counter }}" name="end_time_rank" value="{{ minute }}" {% if minute == preferences.end_time_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="end_time_{{ forloop.counter }}">{{ time }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Maximum Gap Between Classes -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Maximum Gap Between Classes</label>
+                    {% for gap, label in max_time_gaps %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="max_time_gap_{{ forloop.counter }}" name="max_time_gap_rank" value="{{ gap }}" {% if gap == preferences.max_time_gap_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="max_time_gap_{{ forloop.counter }}">{{ label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Minimum Gap Between Classes -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Minimum Gap Between Classes</label>
+                    {% for gap, label in min_time_gaps %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="min_time_gap_{{ forloop.counter }}" name="min_time_gap_rank" value="{{ gap }}" {% if gap == preferences.min_time_gap_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="min_time_gap_{{ forloop.counter }}">{{ label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Lunch Start Time -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Lunch Start Time</label>
+                    {% for minute, time in lunch_times %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="lunch_start_{{ forloop.counter }}" name="lunch_start_rank" value="{{ minute }}" {% if minute == preferences.lunch_start_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="lunch_start_{{ forloop.counter }}">{{ time }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Lunch Duration -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Lunch Duration</label>
+                    {% for duration, label in lunch_duration %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="lunch_duration_{{ forloop.counter }}" name="lunch_duration_rank" value="{{ duration }}" {% if duration == preferences.lunch_duration_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="lunch_duration_{{ forloop.counter }}">{{ label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Max Delayed Lunch Start -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Max Delayed Lunch Start</label>
+                    {% for duration, label in lunch_duration %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="delayed_lunch_start_{{ forloop.counter }}" name="delayed_lunch_start_rank" value="{{ duration }}" {% if duration == preferences.delayed_lunch_start_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="delayed_lunch_start_{{ forloop.counter }}">{{ label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+        
+                <!-- Radio buttons for Minimum Classes Per Day -->
+                <div class="col-12 col-md-6 mb-5">
+                    <label class="form-label">Rank Your Minimum Classes Per Day</label>
+                    {% for num in min_classes_per_day %}
+                        <div class="form-check">
+                            <input type="radio" required class="form-check-input" id="min_classes_per_day_{{ forloop.counter }}" name="min_classes_per_day_rank" value="{{ num }}" {% if num == preferences.min_classes_per_day_rank %}checked{% endif %}>
+                            <label class="form-check-label" for="min_classes_per_day_{{ forloop.counter }}">{{ num }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+        
+    
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function() {
+        
+        $('#submitBtn').click(function(e) {
+            e.preventDefault();
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "If you have previously submitted feedback, this will update your existing feedback.",
+                icon: 'warning',
+                showCancelButton: true,
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: 'Submit',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '{% url "student_feedback" %}',
+                        data: $('#feedbackForm').serialize(),
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'student_dashboard' %}"
+                                });
+                            } else {
+                                var errors = response.errors;
+                                validator.showErrors(errors);
+                            }
+                        },
+                        error: function(response) {
+                            Swal.fire({
+                                text: 'An error occurred while submitting your feedback. Please try again.',
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'student_dashboard' %}"
+                            });
+                            // Handle AJAX error
+                            console.error('AJAX Error:', response);
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

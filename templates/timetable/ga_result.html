@@ -27,7 +27,7 @@
     <form action="{% url 'ga_result' %}" method="POST" class="p-3" id="timetableForm">
         {% csrf_token %}
         <div class="row">
-            <div class="col">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="timetable_id" class="form-label required">Select a timetable profile</label>
                 <select name="timetable_id" id="timetable_id" class="form-select">
                     <option value="" selected disabled>Select or create a profile</option>
@@ -37,9 +37,19 @@
                     <option value="new">Create New Profile</option>
                 </select>
             </div>
-        </div>
-        <div class="row mt-5" id="newProfileNameDiv" style="display: none;">
-            <div class="col">
+            
+            <div class="col-12 col-md-6  mb-4">
+                <label for="status" class="form-label">
+                    Status
+                    <i class='bx bx-info-circle' data-bs-toggle="tooltip" data-bs-title="Active will disable other timetables"></i>
+                </label>
+                <select name="status" id="status" class="form-select">
+                    <option value="0">Inactive</option>
+                    <option value="1">Active</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4" id="newProfileNameDiv" style="display: none;">
                 <label for="timetable_profile" class="form-label required">Profile Name</label>
                 <input type="text" class="form-control" name="timetable_profile" id="timetable_profile" required>
             </div>
@@ -47,7 +57,11 @@
     </form>
 
     <div class="p-3">
-        <ul class="nav nav-tabs" id="resultTab" role="tablist">
+        <span class="fs-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"></path><path d="M13 7h-2v5.414l3.293 3.293 1.414-1.414L13 11.586z"></path></svg>
+            Schedule
+        </span>
+        <ul class="nav nav-tabs mt-4" id="resultTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <a class="nav-link active" id="student-timetable-tab" data-bs-toggle="tab" href="#student-timetable" role="tab" aria-controls="student-timetable" aria-selected="true">Student Timetable</a>
             </li>
@@ -201,6 +215,9 @@
 
 {% block javascript %}
 <script>
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
     document.addEventListener('DOMContentLoaded', function () {
         // Function to toggle collapse based on select change
         function toggleCollapse(selectId, collapsePrefix) {
@@ -233,16 +250,6 @@
         var $submitBtn = $("#submitBtn")
 
         var validator = $form.validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 var formData = new FormData(form);
 
@@ -265,6 +272,9 @@
                             }).then((result) => {
                                 window.location.href = "{% url 'index' %}"
                             });
+                        }else{
+                            var errors = response.errors;
+                            validator.showErrors(errors)
                         }
                     },
                     error: function(xhr, status, error) {

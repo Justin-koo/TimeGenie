@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.db import models
 from django.forms import ValidationError
 from django.utils import timezone
 from django.db.models.functions import Lower
 from django.db.models import UniqueConstraint
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, User
 
 class Course(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -77,7 +79,7 @@ class Classroom(models.Model):
     
 class Intake(models.Model):
     intake_code = models.CharField(max_length=20, unique=True)
-    total_students = models.IntegerField(default=0)
+    # total_students = models.IntegerField(default=0)
     status = models.IntegerField(default=0)
     sections = models.ManyToManyField(Section, related_name='intakes', blank=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -99,6 +101,7 @@ class Intake(models.Model):
     
 class Timetable(models.Model):
     timetable_profile = models.CharField(max_length=20, unique=True)
+    status = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -115,10 +118,10 @@ class Timetable(models.Model):
 
 class TimetableEntry(models.Model):
     timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE)
-    intake_id = models.IntegerField()
-    section_id = models.IntegerField()
-    instructor_id = models.IntegerField()
-    classroom_id = models.IntegerField()
+    intake = models.ForeignKey(Intake, on_delete=models.PROTECT)  # Link to the Intake model
+    section = models.ForeignKey(Section, on_delete=models.PROTECT)
+    instructor = models.ForeignKey(Instructor, on_delete=models.PROTECT)
+    classroom = models.ForeignKey(Classroom, on_delete=models.PROTECT)
     start_time = models.TimeField()
     end_time = models.TimeField()
     day = models.CharField(max_length=10)
@@ -127,4 +130,32 @@ class TimetableEntry(models.Model):
 
     class Meta:
         db_table = 'timetable_entry'
-        
+
+class StudentProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='student_profile')
+    name = models.CharField(max_length=100)
+    intake = models.ForeignKey(Intake, on_delete=models.SET_NULL, null=True, related_name='students')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'student_profile'
+
+    def __str__(self):
+        return self.user.username    
+    
+class Feedback(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    start_time_rank = models.IntegerField()
+    end_time_rank = models.IntegerField()
+    max_time_gap_rank = models.IntegerField()
+    min_time_gap_rank = models.IntegerField()
+    lunch_start_rank = models.IntegerField()
+    lunch_duration_rank = models.IntegerField()
+    delayed_lunch_start_rank = models.IntegerField()
+    min_classes_per_day_rank = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'feedback'

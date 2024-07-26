@@ -7,9 +7,12 @@ from django.core.serializers.json import DjangoJSONEncoder
 import json
 from django.utils import timezone
 from django.http import JsonResponse
+from django.db.models import Count, Q
 
 def index(request):
-    intakes = Intake.objects.prefetch_related('sections__course').all()
+    intakes = Intake.objects.prefetch_related('sections__course').annotate(
+            active_student_count=Count('students', filter=Q(students__user__is_active=True))
+        )
 
     for intake in intakes:
         course_dict = defaultdict(list)
@@ -38,15 +41,9 @@ def create(request):
         intake_form = IntakeForm(request.POST)
  
         if intake_form.is_valid():
-            intake_instance = intake_form.save(commit=False)
+            intake_instance = intake_form.save()
 
             sections = request.POST.getlist('sections')
-            total_students = request.POST.get('total_students')
-
-            if not sections or not int(total_students) > 0:
-                intake_instance.status = 0
-
-            intake_instance.save()
 
             if sections:
                 # Link sections to the newly created intake instance
@@ -88,15 +85,9 @@ def edit(request, intake_id):
         intake_form = IntakeForm(request.POST, instance=intake)
 
         if intake_form.is_valid():
-            intake_instance = intake_form.save(commit=False)
+            intake_instance = intake_form.save()
 
             sections = request.POST.getlist('sections')
-            total_students = request.POST.get('total_students')
-
-            if not sections or not int(total_students) > 0:
-                intake_instance.status = 0
-
-            intake_instance.save()
             intake_instance.sections.set(sections)
 
             return JsonResponse({'success': True, 'message': 'Intake has been successfully updated!'})

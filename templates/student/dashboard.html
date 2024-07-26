@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Dashboard</span>
+        </div>
+    </div>
+
+    <div class="p-3">
+        <span>Current Intake: {{ intake_code }}</span>
+
+        <!-- Nav pills -->
+        <ul class="nav nav-pills nav-fill my-3" id="timetablePills" role="tablist">
+            {% for day in grouped_student_timetable %}
+            <li class="nav-item" role="presentation">
+                <a class="nav-link justify-content-center {% if forloop.first %}active{% endif %}" id="pill-{{ day }}" data-bs-toggle="pill" href="#content-{{ day }}" role="tab" aria-controls="content-{{ day }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                    {{ day }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Tab content -->
+        <div class="tab-content" id="timetablePillContent">
+            {% for day, entries in grouped_student_timetable.items %}
+            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="content-{{ day }}" role="tabpanel" aria-labelledby="pill-{{ day }}">
+                <table class="table text-nowrap border rounded table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th class="bg-body-tertiary">Time</th>
+                            <th class="bg-body-tertiary">Section</th>
+                            <th class="bg-body-tertiary">Classroom</th>
+                            <th class="bg-body-tertiary">Instructor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.time }}</td>
+                            <td>{{ entry.section_code }}</td>
+                            <td>{{ entry.classroom_name }}</td>
+                            <td>{{ entry.instructor_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    // Initialize Bootstrap pill functionality
+    var triggerPillList = [].slice.call(document.querySelectorAll('#timetablePills a'))
+    triggerPillList.forEach(function (triggerEl) {
+        var pillTrigger = new bootstrap.Tab(triggerEl)
+
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault()
+            pillTrigger.show()
+        })
+    })
+</script>
+{% endblock %}

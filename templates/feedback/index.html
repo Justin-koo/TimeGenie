@@ -1,0 +1,182 @@
+<!-- templates/feedback/index.html -->
+{% extends 'base.html' %}
+
+{% block title %}Feedback{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Feedback</span>
+        </div>
+    </div>
+
+    <div class="p-3">
+        <div class="mb-3">
+            <label for="chartSelect" class="form-label">Select Feedback Chart</label>
+            <select id="chartSelect" class="form-select">
+                <option value="startTimeChart" selected>Earliest Start Time</option>
+                <option value="endTimeChart">Latest End Time</option>
+                <option value="lunchStartChart">Lunch Start Time</option>
+                <option value="maxGapChart">Maximum Gap Between Classes</option>
+                <option value="minGapChart">Minimum Gap Between Classes</option>
+                <option value="lunchDurationChart">Lunch Duration</option>
+                <option value="maxDelayedLunchStartChart">Maximum Delayed Lunch Start</option>
+                <option value="minClassesPerDayChart">Minimum Classes Per Day</option>
+            </select>
+        </div>
+
+        <!-- Tab panes -->
+        <div class="chart-container">
+            <canvas id="startTimeChart" width="400" height="400"></canvas>
+            <canvas id="endTimeChart" width="400" height="400" style="display: none;"></canvas>
+            <canvas id="lunchStartChart" width="400" height="400" style="display: none;"></canvas>
+            <canvas id="maxGapChart" width="400" height="400" style="display: none;"></canvas>
+            <canvas id="minGapChart" width="400" height="400" style="display: none;"></canvas>
+            <canvas id="lunchDurationChart" width="400" height="400" style="display: none;"></canvas>
+            <canvas id="maxDelayedLunchStartChart" width="400" height="400" style="display: none;"></canvas>
+            <canvas id="minClassesPerDayChart" width="400" height="400" style="display: none;"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Deserialize the data from the JSON string
+    var data = JSON.parse('{{ data|escapejs }}');
+
+    // Function to prepare datasets for Chart.js
+    function preparePieDataset(data, backgroundColor, borderColor) {
+        return {
+            data: Object.values(data),
+            backgroundColor: backgroundColor,
+            borderColor: borderColor,
+            borderWidth: 1
+        };
+    }
+
+    // Mapping of minutes to time labels
+    var timeLabels = {
+        510: "08:30", 525: "08:45", 540: "09:00", 555: "09:15", 570: "09:30", 585: "09:45", 600: "10:00", 615: "10:15", 630: "10:30",
+        960: "16:00", 975: "16:15", 990: "16:30", 1005: "16:45", 1020: "17:00", 1035: "17:15", 1050: "17:30", 1065: "17:45", 1080: "18:00",
+        720: "12:00", 735: "12:15", 750: "12:30", 765: "12:45", 780: "13:00",
+        60: "1 hour 0 minutes", 75: "1 hour 15 minutes", 90: "1 hour 30 minutes", 105: "1 hour 45 minutes", 120: "2 hours 0 minutes",
+        15: "0 hours 15 minutes", 30: "0 hours 30 minutes", 45: "0 hours 45 minutes",
+        1: "1", 2: "2"
+    };
+
+    // Function to convert data labels to time labels
+    function convertLabels(data) {
+        return Object.keys(data).map(function(key) {
+            return timeLabels[key] || key;
+        });
+    }
+
+    // Colors for the charts
+    var colors = [
+        'rgba(255, 99, 132, 0.2)',
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(255, 159, 64, 0.2)',
+        'rgba(255, 206, 86, 0.2)',
+        'rgba(75, 192, 192, 0.2)',
+        'rgba(153, 102, 255, 0.2)',
+        'rgba(201, 203, 207, 0.2)'
+    ];
+
+    var borderColors = [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(201, 203, 207, 1)'
+    ];
+
+    // Function to create a chart
+    function createChart(chartId, chartData) {
+        var ctx = document.getElementById(chartId).getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: convertLabels(chartData),
+                datasets: [
+                    preparePieDataset(chartData, colors, borderColors)
+                ]
+            }
+        });
+    }
+
+     // Initialize the first chart by default
+     createChart('startTimeChart', data.start_time_rank);
+
+    // Boolean flags to check if charts are already created
+    var chartsInitialized = {
+        startTimeChart: true,
+        endTimeChart: false,
+        lunchStartChart: false,
+        maxGapChart: false,
+        minGapChart: false,
+        lunchDurationChart: false,
+        maxDelayedLunchStartChart: false,
+        minClassesPerDayChart: false,
+    };
+
+    // Event listener to initialize charts when their tab is clicked
+    document.getElementById('chartSelect').addEventListener('change', function (event) {
+        var selectedChart = event.target.value;
+
+        // Hide all charts
+        document.querySelectorAll('canvas').forEach(function (canvas) {
+            canvas.style.display = 'none';
+        });
+
+        // Show the selected chart
+        document.getElementById(selectedChart).style.display = 'block';
+
+        // Initialize the chart if it hasn't been created already
+        if (!chartsInitialized[selectedChart]) {
+            switch (selectedChart) {
+                case 'startTimeChart':
+                    createChart('startTimeChart', data.start_time_rank);
+                    break;
+                case 'endTimeChart':
+                    createChart('endTimeChart', data.end_time_rank);
+                    break;
+                case 'lunchStartChart':
+                    createChart('lunchStartChart', data.lunch_start_rank);
+                    break;
+                case 'maxGapChart':
+                    createChart('maxGapChart', data.max_time_gap_rank);
+                    break;
+                case 'minGapChart':
+                    createChart('minGapChart', data.min_time_gap_rank);
+                    break;
+                case 'lunchDurationChart':
+                    createChart('lunchDurationChart', data.lunch_duration_rank);
+                    break;
+                case 'maxDelayedLunchStartChart':
+                    createChart('maxDelayedLunchStartChart', data.delayed_lunch_start_rank);
+                    break;
+                case 'minClassesPerDayChart':
+                    createChart('minClassesPerDayChart', data.min_classes_per_day_rank);
+                    break;
+            }
+            chartsInitialized[selectedChart] = true;
+        }
+    });
+</script>
+{% endblock %}

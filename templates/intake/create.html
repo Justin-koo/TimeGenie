@@ -29,39 +29,24 @@
     <form action="{% url 'intake.create' %}" method="POST" id="intakeForm" class="p-3">
         {% csrf_token %}
 
-        <div class="row mb-5">
-            <div class="col">
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="intake_code" class="form-label required">Intake code</label>
                 <input type="text" class="form-control" id="intake_code" name="intake_code" required>
             </div>
-        </div>
 
-        <div class="row mb-5">
-            <div class="col">
-                <label for="total_students" class="form-label required">Number of student</label>
-                <input type="number" class="form-control" id="total_students" placeholder="0" value="0" name="total_students" step='1' min="0" required>
-                <div class="form-text">
-                    Blank value will be treated as 0
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-5">
-            <div class="col">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="treeselect-input" class="form-label">Assigned course</label>
                 <div id="treeselect-container"></div>
                 <!-- <div class="form-text"><i class="bi bi-info-circle me-1"></i>Section assigned with instructor will not displayed</div> -->
             </div>
-        </div>
 
-        <div class="col-12">
-            <label for="status" class="form-label">Status</label>
-            <select id="status" name="status" class="form-select" disabled>
-                <option value="0" selected>Inactive</option>
-                <option value="1">Active</option>
-            </select>
-            <div class="form-text">
-                Intake will be set to inactive by default if no students/courses
+            <div class="col-12 col-md-6 mb-4">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="0">Inactive</option>
+                    <option value="1" selected>Active</option>
+                </select>
             </div>
         </div>
 
@@ -76,16 +61,6 @@
         var $submitBtn = $("#submitBtn")
 
         var validator = $form.validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 var formData = new FormData(form);
 
@@ -192,34 +167,7 @@
         // Event listener for treeselect input
         treeselect.srcElement.addEventListener('input', (e) => {
             selectedSections = e.detail
-
-            if (e.detail.length >= 1) {
-                validTreeselect = true;
-            } else {
-                validTreeselect = false;
-            }
-            setStatus();
         });
-
-        // Event listener for total_students input
-        $('#intakeForm input[name="total_students"]').on('keyup', function(){
-            if (validator.element($(this)) && parseFloat($(this).val()) !== 0 && $(this).val()) {
-                validTotalStudent = true;
-            } else {
-                validTotalStudent = false;
-            }
-            setStatus();
-        });
-
-        function setStatus(){
-            if (validTreeselect && validTotalStudent) {
-                $('#status').val(1)
-                $('#status').prop('disabled', false)
-            } else {
-                $('#status').val(0)
-                $('#status').prop('disabled', true)
-            }
-        }
     })
     
 </script>

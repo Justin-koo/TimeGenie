@@ -45,39 +45,23 @@
     <form action="{% url 'intake.edit' intake_id=intake_form.instance.id %}" method="POST" id="intakeForm" class="p-3">
         {% csrf_token %}
 
-        <div class="row mb-5">
-            <div class="col">
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
                 <label for="intake_code" class="form-label required">Intake code</label>
                 <input type="text" class="form-control" value="{{intake_form.instance.intake_code}}" id="intake_code" name="intake_code" required>
             </div>
-        </div>
-
-        <div class="row mb-5">
-            <div class="col">
-                <label for="total_students" class="form-label required">Number of student</label>
-                <input type="number" class="form-control" id="total_students" placeholder="0" value="{{intake_form.instance.total_students}}" name="total_students" step='1' min="0" required>
-                <div class="form-text">
-                    Blank value will be treated as 0
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-5">
-            <div class="col">
+            
+            <div class="col-12 col-md-6 mb-4">
                 <label for="treeselect-input" class="form-label">Assigned course</label>
                 <div id="treeselect-container"></div>
-                <!-- <div class="form-text"><i class="bi bi-info-circle me-1"></i>Section assigned with instructor will not displayed</div> -->
             </div>
-        </div>
 
-        <div class="col-12">
-            <label for="status" class="form-label">Status</label>
-            <select id="status" name="status" class="form-select" {% if intake_form.instance.status == 0 %}disabled{% endif %}>
-                <option value="0" {% if intake_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
-                <option value="1" {% if intake_form.instance.status == 1 %}selected{% endif %}>Active</option>
-            </select>
-            <div class="form-text">
-                Intake will be set to inactive by default if no students/courses
+            <div class="col-12 col-md-6 mb-4">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="0" {% if intake_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
+                    <option value="1" {% if intake_form.instance.status == 1 %}selected{% endif %}>Active</option>
+                </select>
             </div>
         </div>
 
@@ -139,16 +123,6 @@
         });
 
         var validator = $form.validate({
-            errorClass: 'invalid-feedback',
-            highlight: function(element) {
-                $(element).addClass('is-invalid')
-            },
-            unhighlight: function(element) {
-                $(element).removeClass('is-invalid')
-            },
-            onkeyup: function(element) {
-                $(element).valid();
-            },
             submitHandler: function(form) {
                 var formData = new FormData(form);
 
@@ -239,48 +213,19 @@
 
         if (associatedSectionIds.length > 0){
             selectedSections = associatedSectionIds
-
-            $("#status").prop('disabled', false)
-        }
-
-        if (!validTotalStudent){
-            $("#status").prop('disabled', true)
         }
 
         // Event listener for treeselect input
         treeselect.srcElement.addEventListener('input', (e) => {
             selectedSections = e.detail
 
-            if (e.detail.length >= 1) {
-                validTreeselect = true;
-            } else {
-                validTreeselect = false;
-            }
-
-            setStatus();
             checkFormState();
         });
 
         // Event listener for total_students input
         $('#intakeForm input[name="total_students"]').on('keyup', function(){
-            if (validator.element($(this)) && parseFloat($(this).val()) !== 0 && $(this).val()) {
-                validTotalStudent = true;
-            } else {
-                validTotalStudent = false;
-            }
-            setStatus();
             checkFormState();
         });
-
-        function setStatus(){
-            if (validTreeselect && validTotalStudent) {
-                $('#status').val(1)
-                $('#status').prop('disabled', false)
-            } else {
-                $('#status').val(0)
-                $('#status').prop('disabled', true)
-            }
-        }
     })
 
     $('.delete-btn').on('click', function(){

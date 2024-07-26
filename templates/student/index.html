@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}student{% endblock %}
+
+{% load tz %}
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">Students</span>
+
+            <a href="{% url 'student.create' %}" role="button" class="btn btn-primary ms-auto h-100" id="submitBtn">Add student</a>
+        </div>
+    </div>
+
+    <div class="table-responsive px-3 pb-3">
+        <table id="studentTable" class="table text-nowrap border rounded table-hover align-middle" width="100%">
+            <thead>
+                <tr>
+                    <th class="bg-body-tertiary">Student username</th>
+                    <th class="bg-body-tertiary">Student name</th>
+                    <th class="bg-body-tertiary">Intake code</th>
+                    <th class="bg-body-tertiary">Status</th>
+                    <th class="bg-body-tertiary">Last modified</th>
+                    <th class="bg-body-tertiary">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>
+                        {{student.username }}
+                    </td>
+                    <td>{{ student.student_profile.name }}</td>
+                    <td>
+                        {% if student.student_profile.intake and student.student_profile.intake.intake_code %}
+                            <a href="{% url 'intake.edit' intake_id=student.student_profile.intake.id %}" class="mb-1 text-decoration-none">
+                                {{ student.student_profile.intake.intake_code }}
+                            </a>
+                        {% else %}
+                        <span class="text-secondary">
+                            Not Assigned
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if student.is_active == 1%}
+                            <span class="badge p-2 bg-success">Active</span>
+                        {% else %}
+                            <span class="badge p-2 bg-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ student.student_profile.updated_at|timezone:"Asia/Kuala_Lumpur" | date:"M j, Y, g:i a" }}</td>
+                    <td class="text-end">
+                        <div class="d-flex">
+                            <a href="{% url 'student.edit' student_id=student.id %}" role="button" class="btn px-0 border-0"><i class='bx bx-edit fs-5'></i></a>
+                            <form id="delete-form" action="{% url 'student.delete' student_id=student.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="button" class="btn delete-btn border-0"><i class='bx bx-trash fs-5'></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    $(document).ready(function() {
+        $('[data-bs-toggle="tooltip"]').tooltip({
+            html: true // Allow HTML content in tooltips
+        });
+
+        $('.delete-btn').on('click', function(){
+            // console.log(123,name, ele)
+            Swal.fire({
+                text: "Are you sure you want to delete it?",
+                icon: "warning",
+                background: 'var(--bs-body-bg)',
+                color: 'var(--bs-body-color)',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-danger)',
+                cancelButtonColor: "var(--bs-tertiary-color)",
+                confirmButtonText: "Delete",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $(this).closest('form')
+
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: 'POST',
+                        data: $(form).serialize(),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    text: response.message,
+                                    icon: "success",
+                                    background: 'var(--bs-body-bg)',
+                                    color: 'var(--bs-body-color)',
+                                    confirmButtonColor: 'var(--bs-primary)',
+                                    confirmButtonText: 'Ok, got it!'
+                                }).then((result) => {
+                                    window.location.href = "{% url 'student.index' %}"
+                                });
+                            } 
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                text: error,
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'student.index' %}"
+                            });
+
+                            // Handle AJAX error
+                            // console.error('AJAX Error:', status, error);
+                        }
+                    });
+                }
+            });
+        })
+
+        $.fn.dataTable.moment('MMM D, YYYY, h:mm a');
+        $.fn.DataTable.ext.classes.search.input = "form-control"
+        $.fn.DataTable.ext.classes.length.select = "form-select ms-2";
+
+        var table = $('#studentTable').DataTable({
+            order: [[4, 'desc']],
+            lengthMenu: [10, 30, 50],
+            columnDefs: [
+                {
+                    orderable: false,
+                    searchable: false,
+                    targets: -1,
+                },
+                {
+                    className: "text-start", 
+                    orderSequence: [ 'asc', 'desc'],
+                    targets: "_all"
+                },
+            ],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search",
+                lengthMenu: 'Rows per page _MENU_',
+                buttons: {
+                    colvis: 'Column',
+                }
+            },
+            initComplete: function (settings, json) {  
+                $("#studentTable").wrap("<div style='overflow:auto; width:100%;position:relative;'></div>");            
+            },
+        });
+
+    })
+</script>
+{% endblock %}

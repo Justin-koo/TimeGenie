@@ -28,7 +28,7 @@
             <thead>
                 <tr>
                     <th class="bg-body-tertiary">Intake code</th>
-                    <th class="bg-body-tertiary">Total students</th>
+                    <th class="bg-body-tertiary">Total active students</th>
                     <th class="bg-body-tertiary">Sections assigned</th>
                     <th class="bg-body-tertiary">Status</th>
                     <th class="bg-body-tertiary">Last modified</th>
@@ -39,7 +39,7 @@
                 {% for intake in intakes %}
                 <tr>
                     <td>{{ intake.intake_code }}</td>
-                    <td>{{ intake.total_students }}</td>
+                    <td>{{ intake.active_student_count  }}</td>
                     <td>
                         {% if intake.sections.exists %}
                             {% for course, sections in intake.course_sections.items %}
@@ -149,9 +149,6 @@
             columnDefs: [
                 {
                     orderable: false,
-                    targets: [0, 1, 2, 3, 5]
-                },
-                {
                     searchable: false,
                     targets: -1,
                 },

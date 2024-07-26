@@ -151,6 +151,7 @@
             <thead>
                 <tr>
                     <th class="bg-body-tertiary">Saved profile</th>
+                    <th class="bg-body-tertiary">Status</th>
                     <th class="bg-body-tertiary">Last modified</th>
                     <th class="bg-body-tertiary">Action</th>
                 </tr>
@@ -160,6 +161,13 @@
                     <tr>
                         <td>
                             {{ profile.timetable_profile }}
+                        </td>
+                        <td>
+                            {% if profile.status == 1%}
+                                <span class="badge p-2 bg-success">Active</span>
+                            {% else %}
+                                <span class="badge p-2 bg-danger">Inactive</span>
+                            {% endif %}
                         </td>
                         <td>
                             {{ profile.updated_at|timezone:"Asia/Kuala_Lumpur" | date:"M j, Y, g:i a" }}
@@ -255,7 +263,6 @@
         const progressMessages = document.getElementById('progress-messages');
         const socket = new WebSocket('ws://' + window.location.host + '/ws/ga_progress/');
 
-
         function showProgress(){
             console.log('GA started');
             progressMessages.innerHTML = '';
@@ -287,10 +294,6 @@
                     progressBar.setAttribute('aria-valuenow', progressPercentageValue);
                     progressPercentage.innerHTML = `${progressPercentageValue}%`;
                 }
-            };
-
-            socket.onclose = function(event) {
-                console.error('WebSocket closed unexpectedly');
             };
         }
 
@@ -360,7 +363,7 @@
         $.fn.DataTable.ext.classes.length.select = "form-select ms-2";
 
         var table = $('#timeTable').DataTable({
-            order: [[1, 'desc']],
+            order: [[2, 'desc']],
             lengthMenu: [10, 30, 50],
             // responsive: false,
             columnDefs: [

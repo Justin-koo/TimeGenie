@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Student{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="p-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a class="text-body" href="{% url 'student.index' %}">Students</a></li>
+                <li class="breadcrumb-item active" aria-current="page"></li>
+            </ol>
+        </nav>
+
+        <div class="d-flex">
+            <span class="fs-3">
+                <a href="{% url 'student.index' %}" class="text-decoration-none text-body">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="currentColor"><path d="M21 11H6.414l5.293-5.293-1.414-1.414L2.586 12l7.707 7.707 1.414-1.414L6.414 13H21z"></path></svg>
+                </a>
+                Create Student
+            </span>
+
+            <button type="button" class="btn btn-primary ms-auto" id="submitBtn" disabled>Create</button>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'student.create' %}" id="studentForm" class="p-3">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-12 col-md-6 mb-4">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" pattern="\w+" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            
+            <div class="col-12 col-md-6 mb-4">
+                <label for="intake" class="form-label">Intake</label>
+                <select id="intake" name="intake" class="form-select" required>
+                    {% for intake in intakes %}
+                    <option value="{{ intake.id }}">{{ intake.intake_code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="is_active" class="form-label">Status</label>
+                <select id="is_active" name="is_active" class="form-select">
+                    <option value="0">Inactive</option>
+                    <option value="1" selected>Active</option>
+                </select>
+            </div>
+        </div>
+        
+    </form>
+
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var $form = $('#studentForm')
+        var $submitBtn = $("#submitBtn")
+
+        var validator = $form.validate({
+            submitHandler: function(form) {
+                var formData = new FormData(form);
+
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    // dataType: 'json',
+                    processData: false, // Prevent jQuery from processing FormData
+                    contentType: false, // Set contentType to false for FormData
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Ok, got it!'
+                            }).then((result) => {
+                                window.location.href = "{% url 'student.index' %}"
+                            });
+                        } else {
+                            var errors = response.errors;
+                            validator.showErrors(errors)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            text: error,
+                            icon: "error",
+                            background: 'var(--bs-body-bg)',
+                            color: 'var(--bs-body-color)',
+                            confirmButtonColor: 'var(--bs-primary)',
+                            confirmButtonText: 'Close'
+                        }).then((result) => {
+                            window.location.href = "{% url 'student.index' %}"
+                        });
+                        // Handle AJAX error
+                        console.error('AJAX Error:', status, error);
+                    }
+                });
+                return false; // Prevent default form submission
+            }
+        });
+
+        var $requiredInputs = $('input[required]');
+        
+        function checkInputs() {
+            var allFilled = true;
+            $('input[required]:visible').each(function() {
+                if ($(this).val() === '') {
+                    allFilled = false;
+                    return false; // Break the loop
+                }
+            });
+            $submitBtn.prop('disabled', !allFilled);
+        }
+
+        $('input[required]:visible').on('input change keyup', function() {
+            checkInputs(); // Call this function every time any required input changes
+        });
+
+
+        $submitBtn.on('click', function(){
+            if (validator.form()){
+                $form.find('input:disabled, select:disabled').removeAttr('disabled');
+                $form.submit()
+            }
+        })
+    });
+</script>
+{% endblock javascript %}

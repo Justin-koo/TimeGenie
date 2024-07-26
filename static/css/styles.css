@@ -203,3 +203,10 @@ table tr{
 .fc .fc-timegrid-col.fc-day-today {
     background-color: inherit !important;
 }
+
+.chart-container{
+    position: relative;
+    height: 40vh;
+    display: flex;
+    justify-content: center;
+}
