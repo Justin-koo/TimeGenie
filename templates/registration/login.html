@@ -12,7 +12,7 @@
     <div class="card-body">
         {% if form.errors %}
             <div class="alert alert-danger" role="alert">
-                Your username and password didn't match. Please try again.
+                Login Error
             </div>
         {% endif %}
         <form class="row" id="loginForm" method="post" action="{% url 'login' %}">

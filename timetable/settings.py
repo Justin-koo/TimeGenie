@@ -62,6 +62,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'main.middleware.AdminSiteMiddleware',
     'main.middleware.StudentAccessMiddleware',
+    'main.middleware.InstructorAccessMiddleware',
 ]
 
 ROOT_URLCONF = 'timetable.urls'

@@ -24,6 +24,7 @@
         <table id="instructorTable" class="table border text-nowrap rounded table-hover align-middle" width="100%">
             <thead>
                 <tr>
+                    <th class="bg-body-tertiary">Instructor username</th>
                     <th class="bg-body-tertiary">Name</th>
                     <th class="bg-body-tertiary">Sections assigned</th>
                     <th class="bg-body-tertiary">Status</th>
@@ -34,6 +35,7 @@
             <tbody>
                 {% for instructor in instructors %}
                 <tr>
+                    <td>{{ instructor.user.username }}</td>
                     <td>{{ instructor.instructor_name }}</td>
                     <td>
                         {% if instructor.sections.exists %}
@@ -50,7 +52,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if instructor.status == 1%}
+                        {% if instructor.user.is_active == 1%}
                             <span class="badge p-2 bg-success">Active</span>
                         {% else %}
                             <span class="badge p-2 bg-danger">Inactive</span>

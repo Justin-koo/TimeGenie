@@ -10,7 +10,7 @@ import numpy as np
 from main.forms import TimetableForm
 from main.ga import GeneticAlgorithm
 import pygad
-from main.models import Classroom, Instructor, Intake, Section, Timetable, TimetableEntry
+from main.models import Classroom, InstructorProfile, Intake, Section, Timetable, TimetableEntry
 from django.contrib import messages
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -63,8 +63,8 @@ def index(request):
     sections = Section.objects.filter(
         course__status=1,
         intakes__in=intakes,
-        instructor__status=1
-    ).select_related('course', 'instructor').prefetch_related('intakes').distinct()
+        instructor__user__is_active=True  # Filter based on the is_active field in auth_user
+    ).select_related('course', 'instructor__user').prefetch_related('intakes').distinct()
 
     classrooms = Classroom.objects.filter(status=1)
 
@@ -159,7 +159,7 @@ def ga_result(request):
     for entry in student_timetable:
         intake = Intake.objects.get(id=entry['intake_id'])
         section = Section.objects.get(id=entry['section_id'])
-        instructor = Instructor.objects.get(id=section.instructor_id)
+        instructor = InstructorProfile.objects.get(id=section.instructor_id)
         classroom = Classroom.objects.get(id=entry['classroom_id'])
         entry['intake_code'] = intake.intake_code
         entry['section_code'] = section.section_code
@@ -169,7 +169,7 @@ def ga_result(request):
     # Fetch related data for instructor schedule
     for entry in instructor_schedule:
         section = Section.objects.get(id=entry['section_id'])
-        instructor = Instructor.objects.get(id=entry['instructor_id'])
+        instructor = InstructorProfile.objects.get(id=entry['instructor_id'])
         entry['section_code'] = section.section_code
         entry['instructor_name'] = instructor.instructor_name
 
@@ -242,8 +242,8 @@ def ga_view(request):
         sections = Section.objects.filter(
             course__status=1,
             intakes__in=intakes,
-            instructor__status=1
-        ).select_related('course', 'instructor').prefetch_related('intakes').distinct()
+            instructor__user__is_active=True  # Filter based on the is_active field in auth_user
+        ).select_related('course', 'instructor__user').prefetch_related('intakes').distinct()
 
         if not sections.exists():
             error_messages.append("No active sections found with active instructors.")
@@ -431,6 +431,47 @@ def run_ga(sections, classrooms, session):
 
                     if total_times < preferences['min_classes_per_day']:
                         penalty += 1
+
+                    for i in range(total_times):
+                        start_time = sorted_times[i][0]
+                        end_time = sorted_times[i][1]
+
+                        if (start_time <= lunch_break[0] and end_time >= lunch_break[1]) or (start_time >= lunch_break[0] and start_time < lunch_break[1]) or (end_time >= lunch_break[0] and end_time <= lunch_break[1]):
+                            if end_time >= lunch_break[0] + preferences['delayed_lunch_start']:
+                                # penalty += 1
+                                penalty += (end_time - lunch_break[0] + preferences['delayed_lunch_start']) / 60.0 / 5 
+                            
+                            if i < total_times - 1:
+                                next_start_time = sorted_times[i + 1][0]
+                                gap = next_start_time - end_time
+                                if not (gap >= lunch_duration):
+                                    # penalty += 1
+                                    penalty += (lunch_duration - gap) / 60.0 / 5
+                                else:
+                                    if (gap > preferences['max_time_gap']):
+                                        # penalty += 1
+                                        penalty += (gap - preferences['max_time_gap']) / 60.0 / 5
+
+                        else:
+                            if i < total_times - 1:
+                                next_start_time = sorted_times[i + 1][0]
+                                gap = next_start_time - end_time
+
+                                if gap > preferences['max_time_gap']:
+                                    penalty += (gap - preferences['max_time_gap']) / 60.0 / 5
+
+                                if gap <= preferences['min_time_gap']:
+                                    penalty += (preferences['min_time_gap'] - gap) / 60.0 / 5
+
+                                # if gap > preferences['max_time_gap'] or gap <= preferences['min_time_gap']:
+                                #     penalty += 1
+
+        for _, days in instructor_usage.items():
+            for day, times in days.items():
+                if times:
+                    sorted_times = sorted(times)
+
+                    total_times = len(sorted_times)
 
                     for i in range(total_times):
                         start_time = sorted_times[i][0]

@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <form method="post" id="feedbackForm" action="{% url 'student_feedback' %}" class="p-3">
+    <form method="post" id="feedbackForm" action="{% url 'instructor_feedback' %}" class="p-3">
         {% csrf_token %}
     
         <div class="card">
@@ -142,7 +142,7 @@
                 if (result.isConfirmed) {
                     $.ajax({
                         type: 'POST',
-                        url: '{% url "student_feedback" %}',
+                        url: '{% url "instructor_feedback" %}',
                         data: $('#feedbackForm').serialize(),
                         success: function(response) {
                             if (response.success) {
@@ -154,7 +154,7 @@
                                     confirmButtonColor: 'var(--bs-primary)',
                                     confirmButtonText: 'Ok, got it!'
                                 }).then((result) => {
-                                    window.location.href = "{% url 'student_dashboard' %}"
+                                    window.location.href = "{% url 'instructor_dashboard' %}"
                                 });
                             } else {
                                 Swal.fire({
@@ -176,7 +176,7 @@
                                 confirmButtonColor: 'var(--bs-primary)',
                                 confirmButtonText: 'Close'
                             }).then((result) => {
-                                window.location.href = "{% url 'student_dashboard' %}"
+                                window.location.href = "{% url 'instructor_dashboard' %}"
                             });
                             // Handle AJAX error
                             console.error('AJAX Error:', response);

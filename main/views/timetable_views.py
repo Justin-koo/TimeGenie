@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
-from main.models import Timetable, TimetableEntry, Intake, Section, Instructor, Classroom
+from main.models import Timetable, TimetableEntry, Intake, Section, InstructorProfile, Classroom
 from main.forms import TimetableForm
 
 def edit(request, timetable_id):
@@ -37,7 +37,7 @@ def edit(request, timetable_id):
     for entry in timetable_entries:
         intake = Intake.objects.get(id=entry.intake_id)
         section = Section.objects.get(id=entry.section_id)
-        instructor = Instructor.objects.get(id=entry.instructor_id)
+        instructor = InstructorProfile.objects.get(id=entry.instructor_id)
         classroom = Classroom.objects.get(id=entry.classroom_id)
 
         entry_dict = {
@@ -83,7 +83,7 @@ def edit(request, timetable_id):
 def delete(request, timetable_id):
     try:
         timetable = get_object_or_404(Timetable, id=timetable_id)
-    except Instructor.DoesNotExist:
+    except Timetable.DoesNotExist:
         return JsonResponse(status=404)
 
     if request.method == 'POST':

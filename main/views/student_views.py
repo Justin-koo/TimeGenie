@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 
 from main.views.views import generate_option_range, generate_time_gap_options, generate_time_options
-from ..models import Course, Feedback, Instructor, Intake, Section, StudentProfile, TimetableEntry, Timetable
+from ..models import Course, Feedback, InstructorProfile, Intake, Section, StudentProfile, TimetableEntry, Timetable
 from django.core.serializers.json import DjangoJSONEncoder
 import json
 from ..forms import InstructorForm, StudentForm
@@ -158,6 +158,23 @@ def student_feedback(request):
         lunch_duration_rank = request.POST.get('lunch_duration_rank')
         delayed_lunch_start_rank = request.POST.get('delayed_lunch_start_rank')
         min_classes_per_day_rank = request.POST.get('min_classes_per_day_rank')
+
+        if not all([
+            start_time_rank, end_time_rank, max_time_gap_rank,
+            min_time_gap_rank, lunch_start_rank, lunch_duration_rank,
+            delayed_lunch_start_rank, min_classes_per_day_rank
+        ]):
+            errors = {
+                'start_time_rank': 'This field is required.' if not start_time_rank else '',
+                'end_time_rank': 'This field is required.' if not end_time_rank else '',
+                'max_time_gap_rank': 'This field is required.' if not max_time_gap_rank else '',
+                'min_time_gap_rank': 'This field is required.' if not min_time_gap_rank else '',
+                'lunch_start_rank': 'This field is required.' if not lunch_start_rank else '',
+                'lunch_duration_rank': 'This field is required.' if not lunch_duration_rank else '',
+                'delayed_lunch_start_rank': 'This field is required.' if not delayed_lunch_start_rank else '',
+                'min_classes_per_day_rank': 'This field is required.' if not min_classes_per_day_rank else '',
+            }
+            return JsonResponse({'success': False, 'errors': errors})
 
         feedback, created = Feedback.objects.update_or_create(
             user=user,

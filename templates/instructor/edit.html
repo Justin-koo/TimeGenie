@@ -46,8 +46,27 @@
 
         <div class="row">
             <div class="col-12 col-md-6 mb-4">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{ instructor_form.instance.user.username }}" pattern="\w+" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
                 <label for="instructor_name" class="form-label required">Name</label>
                 <input type="text" class="form-control" id="instructor_name" name="instructor_name" value="{{ instructor_form.instance.instructor_name }}" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="password" class="form-label">New Password</label>
+                <input type="password" class="form-control" id="password" name="password" disabled>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4 mt-auto">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="changePasswordCheckbox" name="change_password">
+                    <label class="form-check-label" for="changePasswordCheckbox">
+                        Change password
+                    </label>
+                </div>
             </div>
         
             <div class="col-12 col-md-6 mb-4">
@@ -59,10 +78,10 @@
             </div>
 
             <div class="col-12 col-md-6 mb-4">
-                <label for="status" class="form-label">Status</label>
-                <select id="status" name="status" class="form-select" >
-                    <option value="0" {% if instructor_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
-                    <option value="1" {% if instructor_form.instance.status == 1 %}selected{% endif %}>Active</option>
+                <label for="is_active" class="form-label">Status</label>
+                <select id="is_active" name="is_active" class="form-select" >
+                    <option value="0" {% if instructor_form.instance.user.is_active == 0 %}selected{% endif %}>Inactive</option>
+                    <option value="1" {% if instructor_form.instance.user.is_active == 1 %}selected{% endif %}>Active</option>
                 </select>
             </div>
         </div>
@@ -78,6 +97,18 @@
     const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 
     document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('changePasswordCheckbox').addEventListener('change', function() {
+            var passwordField = document.getElementById('password');
+            if (this.checked) {
+                passwordField.disabled = false;
+            } else {
+                passwordField.disabled = true;
+                passwordField.value = ""
+            }
+
+            checkFormState()
+        });
+
         var $form = $('#instructorForm')
         var $submitBtn = $("#updateFormBtn")
 
@@ -85,7 +116,7 @@
         $form.find('input:visible, select:visible').each(function() {
             var $field = $(this);
             originalValues[$field.attr('name')] = $field.val();
-        });
+        })
 
         function arraysEqual(arr1, arr2) {
             if (arr1.length !== arr2.length) {
@@ -106,7 +137,7 @@
             valueChanged = !arraysEqual(selectedSections, associatedSectionIds)
 
             // Iterate over all visible inputs and selects
-            $('#instructor_name, #status').each(function() {
+            $('#username, #instructor_name, #is_active, #password').each(function() {
                 var $field = $(this);
 
                 // Check if the field value has changed from the original
@@ -124,7 +155,7 @@
             $submitBtn.prop('disabled', !(valueChanged && formValid));
         }
 
-        $('#instructor_name, #status').on('input', function() {
+        $('input:visible, select:visible').on('input', function() {
             checkFormState();
         });
 
@@ -181,7 +212,7 @@
 
         $submitBtn.on('click', function(){
             if (validator.form()){
-                $form.find('input:disabled, select:disabled').removeAttr('disabled');
+                // $form.find('input:disabled, select:disabled').removeAttr('disabled');
                 // $form.find('#sections').val(selectedSections)
                 $form.submit()
             }

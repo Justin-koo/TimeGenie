@@ -29,8 +29,18 @@
         {% csrf_token %}
         <div class="row">
             <div class="col-12 col-md-6 mb-4">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" pattern="\w+" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
                 <label for="instructor_name" class="form-label">Name</label>
                 <input type="text" class="form-control" id="instructor_name" name="instructor_name" required>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
             </div>
 
             <div class="col-12 col-md-6 mb-4">
@@ -43,8 +53,8 @@
             </div>
 
             <div class="col-12 col-md-6 mb-4">
-                <label for="status" class="form-label">Status</label>
-                <select id="status" name="status" class="form-select">
+                <label for="is_active" class="form-label">Status</label>
+                <select id="is_active" name="is_active" class="form-select">
                     <option value="0">Inactive</option>
                     <option value="1" selected>Active</option>
                 </select>

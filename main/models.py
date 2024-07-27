@@ -24,21 +24,21 @@ class Course(models.Model):
     def __str__(self):
         return self.name
     
-class Instructor(models.Model):
+class InstructorProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='instructor_profile')
     instructor_name = models.CharField(max_length=100)
-    status = models.IntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'instructors'
+        db_table = 'instructor_profile'
 
     def __str__(self):
         return self.instructor_name 
 
 class Section(models.Model):
     course = models.ForeignKey(Course, related_name='sections', on_delete=models.CASCADE)
-    instructor = models.ForeignKey(Instructor, related_name='sections', on_delete=models.SET_NULL, null=True, blank=True)
+    instructor = models.ForeignKey(InstructorProfile, related_name='sections', on_delete=models.SET_NULL, null=True, blank=True)
     section_code = models.CharField(max_length=20, unique=True)
     section_type = models.CharField(max_length=10)
     section_duration = models.IntegerField()
@@ -120,7 +120,7 @@ class TimetableEntry(models.Model):
     timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE)
     intake = models.ForeignKey(Intake, on_delete=models.PROTECT)  # Link to the Intake model
     section = models.ForeignKey(Section, on_delete=models.PROTECT)
-    instructor = models.ForeignKey(Instructor, on_delete=models.PROTECT)
+    instructor = models.ForeignKey(InstructorProfile, on_delete=models.PROTECT)
     classroom = models.ForeignKey(Classroom, on_delete=models.PROTECT)
     start_time = models.TimeField()
     end_time = models.TimeField()

@@ -1,5 +1,5 @@
 {% load static %}
-
+{% load custom_tags %}
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="">
     <head>
@@ -91,9 +91,10 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li><a class="dropdown-item" href="{% url 'course.create' %}">Add course</a></li>
-                      <li><a class="dropdown-item" href="{% url 'instructor.create' %}">Add Instructor</a></li>
+                      <li><a class="dropdown-item" href="{% url 'instructor.create' %}">Add instructor</a></li>
                       <li><a class="dropdown-item" href="{% url 'classroom.create' %}">Add room</a></li>
                       <li><a class="dropdown-item" href="{% url 'intake.create' %}">Add intake</a></li>
+                      <li><a class="dropdown-item" href="{% url 'student.create' %}">Add student</a></li>
                     </ul>
                 </div>
                 {% endif %}
@@ -163,6 +164,7 @@
                                     <span class="ms-4">{{ request.user.username }}</span>
                                 </a>
                             </li>
+                            {% if request.user|in_group:"Students" %}
                             <li class="nav-item mb-3">
                                 <a href="{% url 'student_dashboard' %}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
                                     <i class='bx bxs-dashboard fs-5'></i>
@@ -175,6 +177,21 @@
                                     <span class="ms-4">Feedback</span>
                                 </a>
                             </li>
+                            {% endif %}
+                            {% if request.user|in_group:"Instructors" %}
+                                <li class="nav-item mb-3">
+                                    <a href="{% url 'instructor_dashboard' %}" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">
+                                        <i class='bx bxs-dashboard fs-5'></i>
+                                        <span class="ms-4">Dashboard</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item mb-3">
+                                    <a href="{% url 'instructor_feedback' %}" class="nav-link {% if 'feedback' in request.path %}active{% endif %}">
+                                        <i class='bx bx-message-dots fs-5'></i>
+                                        <span class="ms-4">Feedback</span>
+                                    </a>
+                                </li>
+                            {% endif %}
                             {% endif %}
                         </ul>
 
