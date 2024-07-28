@@ -29,17 +29,17 @@
         {% csrf_token %}
         <div class="row">
             <div class="col-12 col-md-6 mb-4">
-                <label for="username" class="form-label">Username</label>
+                <label for="username" class="form-label required">Username</label>
                 <input type="text" class="form-control" id="username" name="username" pattern="\w+" required>
             </div>
 
             <div class="col-12 col-md-6 mb-4">
-                <label for="name" class="form-label">Name</label>
+                <label for="name" class="form-label required">Name</label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
 
             <div class="col-12 col-md-6 mb-4">
-                <label for="password" class="form-label">Password</label>
+                <label for="password" class="form-label required">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
             
