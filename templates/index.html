@@ -277,7 +277,7 @@
             socket.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 let message = data.message;
-                console.log(123,data)
+                // console.log(123,data)
                 if (message.completed) {
                     progressBar.style.width = '100%';
                     progressBar.setAttribute('aria-valuenow', 100);
