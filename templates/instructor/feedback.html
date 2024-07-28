@@ -157,14 +157,16 @@
                                     window.location.href = "{% url 'instructor_dashboard' %}"
                                 });
                             } else {
-                                Swal.fire({
-                                    text: 'Please fill up the form',
-                                    icon: "error",
-                                    background: 'var(--bs-body-bg)',
-                                    color: 'var(--bs-body-color)',
-                                    confirmButtonColor: 'var(--bs-primary)',
-                                    confirmButtonText: 'Close'
-                                })
+                                if(!response.isFilled){
+                                    Swal.fire({
+                                        text: 'Please fill up the form',
+                                        icon: "error",
+                                        background: 'var(--bs-body-bg)',
+                                        color: 'var(--bs-body-color)',
+                                        confirmButtonColor: 'var(--bs-primary)',
+                                        confirmButtonText: 'Close'
+                                    })
+                                }
                             }
                         },
                         error: function(response) {

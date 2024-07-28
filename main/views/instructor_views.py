@@ -240,17 +240,9 @@ def instructor_feedback(request):
             min_time_gap_rank, lunch_start_rank, lunch_duration_rank,
             delayed_lunch_start_rank, min_classes_per_day_rank
         ]):
-            errors = {
-                'start_time_rank': 'This field is required.' if not start_time_rank else '',
-                'end_time_rank': 'This field is required.' if not end_time_rank else '',
-                'max_time_gap_rank': 'This field is required.' if not max_time_gap_rank else '',
-                'min_time_gap_rank': 'This field is required.' if not min_time_gap_rank else '',
-                'lunch_start_rank': 'This field is required.' if not lunch_start_rank else '',
-                'lunch_duration_rank': 'This field is required.' if not lunch_duration_rank else '',
-                'delayed_lunch_start_rank': 'This field is required.' if not delayed_lunch_start_rank else '',
-                'min_classes_per_day_rank': 'This field is required.' if not min_classes_per_day_rank else '',
-            }
-            return JsonResponse({'success': False, 'errors': errors})
+            
+            isFilled = False
+            return JsonResponse({'success': False, 'isFilled': isFilled})
 
         feedback, created = Feedback.objects.update_or_create(
             user=user,
