@@ -808,8 +808,8 @@ def ga_preference(request):
     lunch_times = generate_time_options(12, 0, 13, 0, 15) 
     min_classes_per_day = generate_option_range(1, 2, 1)  # Minimum classes per day from 1 to 6
     
-    max_generations = generate_option_range(1000, 10000, 50)  # Maximum generations for the GA from 50 to 500
-    population_size = generate_option_range(50, 1000, 10)  # Population size for the GA from 10 to 100
+    max_generations = generate_option_range(1000, 10000, 100)  # Maximum generations for the GA from 50 to 500
+    population_size = generate_option_range(100, 1000, 100)  # Population size for the GA from 10 to 100
 
     if request.method == 'POST':
         # Process the form data
