@@ -24,7 +24,7 @@ def index(request):
 
 def create(request):
     courses = Course.objects.all().order_by('name').prefetch_related('sections')
-    students = StudentProfile.objects.filter(user__is_active=True).select_related('user')
+    students = StudentProfile.objects.all().select_related('user')
 
     courses_data = []
     for course in courses:
@@ -73,7 +73,7 @@ def create(request):
 
 def edit(request, intake_id):
     intake = get_object_or_404(Intake, id=intake_id)
-    students = StudentProfile.objects.filter(user__is_active=True).select_related('user')
+    students = StudentProfile.objects.all().select_related('user')
 
     courses = Course.objects.all().order_by('name').prefetch_related('sections')
 
