@@ -1,7 +1,7 @@
 from collections import defaultdict
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from ..models import Course, Intake, Section
+from ..models import Course, Intake, Section, StudentProfile
 from ..forms import IntakeForm
 from django.core.serializers.json import DjangoJSONEncoder
 import json
@@ -24,6 +24,7 @@ def index(request):
 
 def create(request):
     courses = Course.objects.all().order_by('name').prefetch_related('sections')
+    students = StudentProfile.objects.filter(user__is_active=True).select_related('user')
 
     courses_data = []
     for course in courses:
@@ -36,7 +37,6 @@ def create(request):
         }
         courses_data.append(course_data)
 
-
     if request.method == 'POST':
         intake_form = IntakeForm(request.POST)
  
@@ -44,10 +44,17 @@ def create(request):
             intake_instance = intake_form.save()
 
             sections = request.POST.getlist('sections')
+            student_ids = request.POST.getlist('students')
 
             if sections:
                 # Link sections to the newly created intake instance
                 intake_instance.sections.set(sections)  # Assuming 'sections' contains a list of section IDs
+
+            if student_ids:
+                for student_id in student_ids:
+                    student = StudentProfile.objects.get(id=student_id)
+                    student.intake = intake_instance
+                    student.save()
             
             return JsonResponse({'success': True, 'message': 'Intake has been successfully created!'})
         else: 
@@ -58,6 +65,7 @@ def create(request):
 
     context = {
         'courses_json': json.dumps(courses_data, cls=DjangoJSONEncoder),
+        'students': students,
         'intake_form': intake_form,
     }
 
@@ -65,6 +73,7 @@ def create(request):
 
 def edit(request, intake_id):
     intake = get_object_or_404(Intake, id=intake_id)
+    students = StudentProfile.objects.filter(user__is_active=True).select_related('user')
 
     courses = Course.objects.all().order_by('name').prefetch_related('sections')
 
@@ -80,6 +89,7 @@ def edit(request, intake_id):
         courses_data.append(course_data)
 
     associated_sections = list(intake.sections.values('id', 'section_code'))
+    associated_students = list(intake.students.values('id', 'user__username'))
 
     if request.method == 'POST':
         intake_form = IntakeForm(request.POST, instance=intake)
@@ -88,7 +98,19 @@ def edit(request, intake_id):
             intake_instance = intake_form.save()
 
             sections = request.POST.getlist('sections')
+            student_ids = request.POST.getlist('students')
+            
             intake_instance.sections.set(sections)
+
+            # Clear existing students
+            intake_instance.students.clear()
+
+            if student_ids:
+                # Add new students
+                for student_id in student_ids:
+                    student = StudentProfile.objects.get(id=student_id)
+                    student.intake = intake_instance
+                    student.save()
 
             return JsonResponse({'success': True, 'message': 'Intake has been successfully updated!'})
         
@@ -103,6 +125,8 @@ def edit(request, intake_id):
         'courses_json': json.dumps(courses_data, cls=DjangoJSONEncoder),
         'intake_form': intake_form,
         'associated_sections': json.dumps(associated_sections, cls=DjangoJSONEncoder),
+        'students': students,
+        'associated_students': [student['id'] for student in associated_students],
     }
 
     return render(request, 'intake/edit.html', context)

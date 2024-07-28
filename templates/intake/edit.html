@@ -57,6 +57,15 @@
             </div>
 
             <div class="col-12 col-md-6 mb-4">
+                <label for="student-select" class="form-label">Select Students</label>
+                <select id="student-select" name="students" class="form-select" multiple>
+                    {% for student in students %}
+                        <option value="{{ student.id }}" {% if student.id in associated_students %}selected{% endif %}>{{ student.name }} ({{ student.user.username }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
                 <label for="status" class="form-label">Status</label>
                 <select id="status" name="status" class="form-select">
                     <option value="0" {% if intake_form.instance.status == 0 %}selected{% endif %}>Inactive</option>
@@ -72,6 +81,12 @@
 {% block javascript %}
 <script>
     $(document).ready(function(){
+        $('#student-select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            closeOnSelect: false,
+        })
+
         var $form = $('#intakeForm')
         var $submitBtn = $("#updateFormBtn")
 
@@ -100,7 +115,7 @@
             valueChanged = !arraysEqual(selectedSections, associatedSectionIds)
 
             // Iterate over all visible inputs and selects
-            $('#intake_code, #total_students, #status').each(function() {
+            $('#intake_code, #total_students, #student-select, #status').each(function() {
                 var $field = $(this);
 
                 // Check if the field value has changed from the original
@@ -118,7 +133,7 @@
             $submitBtn.prop('disabled', !(valueChanged && formValid));
         }
 
-        $('#intake_code, #status').on('input', function() {
+        $('#intake_code, #student-select, #status').on('input', function() {
             checkFormState();
         });
 

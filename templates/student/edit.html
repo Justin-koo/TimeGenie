@@ -93,6 +93,11 @@
 {% block javascript %}
 <script>
     $(document).ready(function(){
+        $("#intake").select2({
+            theme: "bootstrap-5",
+            width: '100%'
+        })
+        
         $('.delete-btn').on('click', function(){
             // console.log(123,name, ele)
             Swal.fire({

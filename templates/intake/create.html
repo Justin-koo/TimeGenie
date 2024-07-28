@@ -42,6 +42,15 @@
             </div>
 
             <div class="col-12 col-md-6 mb-4">
+                <label for="student-select" class="form-label">Select Students</label>
+                <select id="student-select" name="students" class="form-select" multiple>
+                    {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.name }} ({{ student.user.username }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 mb-4">
                 <label for="status" class="form-label">Status</label>
                 <select id="status" name="status" class="form-select">
                     <option value="0">Inactive</option>
@@ -57,6 +66,12 @@
 {% block javascript %}
 <script>
     $(document).ready(function(){
+        $('#student-select').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            closeOnSelect: false,
+        })
+
         var $form = $('#intakeForm')
         var $submitBtn = $("#submitBtn")
 

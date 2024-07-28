@@ -45,25 +45,42 @@ def edit(request, timetable_id):
             'section_code': section.section_code,
             'classroom_name': classroom.room,
             'time': f"{entry.start_time.strftime('%H:%M')} - {entry.end_time.strftime('%H:%M')}",
+            'intake_code': intake.intake_code  # Include the intake code
         }
 
         # Group by intake code
         intake_code = intake.intake_code
         if intake_code not in grouped_student_timetable:
             grouped_student_timetable[intake_code] = []
-        grouped_student_timetable[intake_code].append(entry_dict)
+        
+        # Check for duplicates and merge entries
+        existing_entry = next((e for e in grouped_student_timetable[intake_code] if e['day'] == entry_dict['day'] and e['section_code'] == entry_dict['section_code'] and e['time'] == entry_dict['time']), None)
+        if existing_entry:
+            existing_entry['intake_code'] += f", {intake.intake_code}"
+        else:
+            grouped_student_timetable[intake_code].append(entry_dict)
 
         # Group by instructor name
         instructor_name = instructor.instructor_name
         if instructor_name not in grouped_instructor_schedule:
             grouped_instructor_schedule[instructor_name] = []
-        grouped_instructor_schedule[instructor_name].append(entry_dict)
+
+        existing_entry = next((e for e in grouped_instructor_schedule[instructor_name] if e['day'] == entry_dict['day'] and e['section_code'] == entry_dict['section_code'] and e['time'] == entry_dict['time']), None)
+        if existing_entry:
+            existing_entry['intake_code'] += f", {intake.intake_code}"
+        else:
+            grouped_instructor_schedule[instructor_name].append(entry_dict)
 
         # Group by classroom name
         classroom_name = classroom.room
         if classroom_name not in grouped_class_availability:
             grouped_class_availability[classroom_name] = []
-        grouped_class_availability[classroom_name].append(entry_dict)
+
+        existing_entry = next((e for e in grouped_class_availability[classroom_name] if e['day'] == entry_dict['day'] and e['section_code'] == entry_dict['section_code'] and e['time'] == entry_dict['time']), None)
+        if existing_entry:
+            existing_entry['intake_code'] += f", {intake.intake_code}"
+        else:
+            grouped_class_availability[classroom_name].append(entry_dict)
 
     grouped_student_timetable = {k: sort_entries(v) for k, v in grouped_student_timetable.items()}
     grouped_instructor_schedule = {k: sort_entries(v) for k, v in grouped_instructor_schedule.items()}

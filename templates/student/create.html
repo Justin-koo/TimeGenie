@@ -45,7 +45,7 @@
             
             <div class="col-12 col-md-6 mb-4">
                 <label for="intake" class="form-label">Intake</label>
-                <select id="intake" name="intake" class="form-select" required>
+                <select id="intake" name="intake" class="form-select w-100" required>
                     {% for intake in intakes %}
                     <option value="{{ intake.id }}">{{ intake.intake_code }}</option>
                     {% endfor %}
@@ -69,6 +69,11 @@
 {% block javascript %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        $("#intake").select2({
+            theme: "bootstrap-5",
+            width: '100%',
+        })
+
         var $form = $('#studentForm')
         var $submitBtn = $("#submitBtn")
 

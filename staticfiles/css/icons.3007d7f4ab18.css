@@ -1,0 +1,7 @@
+.fa-beat{
+    --fa-animation-duration: 0s;
+}
+
+.nav-link:hover .fa-beat{
+    --fa-animation-duration: 1s;
+}
