@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.forms import formset_factory, inlineformset_factory
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from ..models import Course, Section
 from django.utils import timezone
@@ -50,7 +50,11 @@ def create(request):
     return render(request, 'course/create.html', {'course_form': course_form, 'section_formset': section_formset})
 
 def edit(request, course_id):
-    course = get_object_or_404(Course, id=course_id)
+    try:
+        course = get_object_or_404(Course, id=course_id)
+    except Http404:
+        messages.error(request, 'Course not found')
+        return redirect('course.index')
 
     num_existing_sections = course.sections.count()
     extra_forms = 1 if num_existing_sections == 0 else 0

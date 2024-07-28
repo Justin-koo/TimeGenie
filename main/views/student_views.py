@@ -1,5 +1,5 @@
 from collections import defaultdict
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -43,7 +43,12 @@ def create(request):
     return render(request, 'student/create.html', context)
 
 def edit(request, student_id):
-    user = get_object_or_404(User, pk=student_id)
+    try: 
+        user = get_object_or_404(User, pk=student_id)
+    except Http404:
+        messages.error(request, 'Student not found')
+        return redirect('student.index')
+    
     student_profile = user.student_profile
     intakes = Intake.objects.filter(status=1)
 

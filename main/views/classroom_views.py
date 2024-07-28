@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from ..models import Course, Classroom
 from ..forms import ClassForm
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.contrib.auth.decorators import login_required
 
 def index(request):
@@ -34,7 +34,11 @@ def create(request):
 
 
 def edit(request, room_id):
-    room = get_object_or_404(Classroom, id=room_id)
+    try:
+        room = get_object_or_404(Classroom, id=room_id)
+    except Http404:
+        messages.error(request, 'Classroom not found')
+        return redirect('classroom.index')
     
     if request.method == 'POST':
         classroom_form = ClassForm(request.POST, instance = room)

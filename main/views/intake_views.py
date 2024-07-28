@@ -6,7 +6,7 @@ from ..forms import IntakeForm
 from django.core.serializers.json import DjangoJSONEncoder
 import json
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.db.models import Count, Q
 
 def index(request):
@@ -72,7 +72,13 @@ def create(request):
     return render(request, 'intake/create.html', context)
 
 def edit(request, intake_id):
-    intake = get_object_or_404(Intake, id=intake_id)
+    try:
+        intake = get_object_or_404(Intake, id=intake_id)
+    except Http404:
+        messages.error(request, 'Intake not found')
+        return redirect('intake.index')
+
+    
     students = StudentProfile.objects.all().select_related('user')
 
     courses = Course.objects.all().order_by('name').prefetch_related('sections')

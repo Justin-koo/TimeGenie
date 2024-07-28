@@ -1,5 +1,5 @@
 from collections import defaultdict
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from main.views.views import generate_option_range, generate_time_gap_options, generate_time_options
@@ -67,7 +67,11 @@ def create(request):
     return render(request, 'instructor/create.html', context)
 
 def edit(request, instructor_id):
-    instructor_profile = get_object_or_404(InstructorProfile, id=instructor_id)
+    try: 
+        instructor_profile = get_object_or_404(InstructorProfile, id=instructor_id)
+    except Http404:
+        messages.error(request, 'Instructor not found')
+        return redirect('instructor.index')
     user = instructor_profile.user
 
     courses = Course.objects.all().order_by('name').prefetch_related('sections')

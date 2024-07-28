@@ -155,8 +155,16 @@
                                 window.location.href = "{% url 'index' %}"
                             });
                         } else {
-                            var errors = response.errors;
-                            validator.showErrors(errors)
+                            Swal.fire({
+                                text: "An error occured",
+                                icon: "error",
+                                background: 'var(--bs-body-bg)',
+                                color: 'var(--bs-body-color)',
+                                confirmButtonColor: 'var(--bs-primary)',
+                                confirmButtonText: 'Close'
+                            }).then((result) => {
+                                window.location.href = "{% url 'index' %}"
+                            });
                         }
                 },
                 error: function(response) {

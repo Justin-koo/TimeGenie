@@ -812,24 +812,27 @@ def ga_preference(request):
     population_size = generate_option_range(100, 1000, 100)  # Population size for the GA from 10 to 100
 
     if request.method == 'POST':
-        # Process the form data
-        preferences = {
-            'start_time': int(request.POST.get('start_time', request.session['ga_preferences'].get('start_time'))),
-            'end_time': int(request.POST.get('end_time', request.session['ga_preferences'].get('end_time'))),
-            'min_time_gap': int(request.POST.get('min_time_gap', request.session['ga_preferences'].get('min_time_gap'))),
-            'max_time_gap': int(request.POST.get('max_time_gap', request.session['ga_preferences'].get('max_time_gap'))),
-            'lunch_start': int(request.POST.get('lunch_start', request.session['ga_preferences'].get('lunch_start'))),
-            'lunch_duration': int(request.POST.get('lunch_duration', request.session['ga_preferences'].get('lunch_duration'))),
-            'delayed_lunch_start': int(request.POST.get('delayed_lunch_start', request.session['ga_preferences'].get('delayed_lunch_start'))),
-            'min_classes_per_day': int(request.POST.get('min_classes_per_day', request.session['ga_preferences'].get('min_classes_per_day'))),
-            'max_generations': int(request.POST.get('max_generations', request.session['ga_preferences'].get('max_generations'))),
-            'population_size': int(request.POST.get('population_size', request.session['ga_preferences'].get('population_size')))
-        }
+        try:
+            # Process the form data
+            preferences = {
+                'start_time': int(request.POST.get('start_time', request.session['ga_preferences'].get('start_time'))),
+                'end_time': int(request.POST.get('end_time', request.session['ga_preferences'].get('end_time'))),
+                'min_time_gap': int(request.POST.get('min_time_gap', request.session['ga_preferences'].get('min_time_gap'))),
+                'max_time_gap': int(request.POST.get('max_time_gap', request.session['ga_preferences'].get('max_time_gap'))),
+                'lunch_start': int(request.POST.get('lunch_start', request.session['ga_preferences'].get('lunch_start'))),
+                'lunch_duration': int(request.POST.get('lunch_duration', request.session['ga_preferences'].get('lunch_duration'))),
+                'delayed_lunch_start': int(request.POST.get('delayed_lunch_start', request.session['ga_preferences'].get('delayed_lunch_start'))),
+                'min_classes_per_day': int(request.POST.get('min_classes_per_day', request.session['ga_preferences'].get('min_classes_per_day'))),
+                'max_generations': int(request.POST.get('max_generations', request.session['ga_preferences'].get('max_generations'))),
+                'population_size': int(request.POST.get('population_size', request.session['ga_preferences'].get('population_size')))
+            }
 
-        # Save preferences in the session or database as needed
-        request.session['ga_preferences'] = preferences
+            # Save preferences in the session or database as needed
+            request.session['ga_preferences'] = preferences
 
-        return JsonResponse({'success': True, 'message': 'Preferences have been successfully saved!'})
+            return JsonResponse({'success': True, 'message': 'Preferences have been successfully saved!'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'An error occurred: {str(e)}'})
 
     ensure_default_preferences(request.session)
     
