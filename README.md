@@ -1,5 +1,8 @@
 # TimeGenie
-## Run on your local machine by:
+
+***Smart Timetable System with Genetic Algorithm***
+
+Run on your local machine by:
 
 - git clone https://github.com/Tunardo/TimeGenie.git
 
