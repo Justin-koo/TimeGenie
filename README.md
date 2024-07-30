@@ -8,6 +8,6 @@ Run on your local machine by:
 
 - pip install -r requirements.txt
 
-- python manage.py runserver
+- daphne -p 8000 timetable.asgi:application
 
 - then go to port http://127.0.0.1:8000/ to run the local server
