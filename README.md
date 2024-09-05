@@ -10,7 +10,7 @@ The system is written in Python and uses DJANGO framework
 
 Run on your local machine by:
 
-- git clone https://github.com/Tunardo/TimeGenie.git
+- git clone https://github.com/Tunardo/LBC-Fitness.git
 
 - pip install -r requirements.txt
 
